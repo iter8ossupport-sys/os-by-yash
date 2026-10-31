@@ -1,0 +1,6 @@
+{
+  "name": "Yash OS",
+  "description": "Founder Operating System: plan, execute, review, and compound.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
