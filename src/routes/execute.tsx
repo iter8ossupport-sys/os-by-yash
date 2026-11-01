@@ -139,12 +139,17 @@ function ExecutePage() {
         </button>
         {ctxOpen && (
           <div className="mt-4 grid gap-3 animate-in fade-in md:grid-cols-3">
-            <div className="rounded-2xl bg-secondary/40 p-3 text-xs leading-relaxed">{g.levelA.text}</div>
-            <div className="rounded-2xl bg-secondary/40 p-3 text-xs leading-relaxed">{g.levelB.text}</div>
-            <div className="space-y-1.5 rounded-2xl bg-secondary/40 p-3 text-xs">
+            <div className="rounded-2xl bg-secondary/40 p-3.5 text-xs leading-relaxed text-foreground/90">{g.levelA.text}</div>
+            <div className="rounded-2xl bg-secondary/40 p-3.5 text-xs leading-relaxed text-foreground/90">{g.levelB.text}</div>
+            <div className="flex flex-col justify-center gap-2.5 rounded-2xl bg-secondary/40 p-3.5 text-xs">
               {state.priorities.map((p) => (
-                <div key={p.id}>
-                  <span className="font-semibold text-foreground/80">#{p.id}:</span> {g.levelC[p.id].target}
+                <div key={p.id} className="flex items-start gap-2 leading-relaxed">
+                  <span className={cn("font-semibold shrink-0", p.id === 1 ? "text-p1" : p.id === 2 ? "text-cyan" : "text-violet")}>
+                    {p.id}:
+                  </span>
+                  <span className="text-foreground/90">
+                    {g.levelC[p.id].target}
+                  </span>
                 </div>
               ))}
             </div>
@@ -386,43 +391,83 @@ function ExecutePage() {
                           {isExpanded && (
                             <div
                               onClick={(e) => e.stopPropagation()}
-                              className="mt-3 border-t border-glass-border pt-3 space-y-2 text-xs animate-in fade-in cursor-default"
+                              className="mt-3.5 border-t border-glass-border/70 pt-3.5 space-y-2.5 text-xs animate-in fade-in cursor-default"
                             >
-                              <div className="rounded-lg bg-background/50 p-2">
-                                <span className="font-semibold text-cyan">1. Objective: </span>
-                                <span className="text-foreground/90">{t.what || t.title}</span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                  <span className="text-muted-foreground">2. Planned duration: </span>
-                                  <span className="font-medium text-foreground">{fmtMin(t.duration)}</span>
+                              {/* 1. Objective */}
+                              <div className="rounded-xl border border-glass-border/60 bg-background/50 p-3">
+                                <div className="text-[11px] font-semibold tracking-wide text-cyan mb-1">
+                                  1. Objective
                                 </div>
-                                <div>
-                                  <span className="text-muted-foreground">5. Where: </span>
-                                  <span className="font-medium text-foreground">{t.where || "Workspace"}</span>
+                                <div className="text-xs text-foreground/90 leading-relaxed break-words">
+                                  {t.what || t.title}
                                 </div>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">3. What to do: </span>
-                                <span className="text-foreground/90">{t.what}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">4. How to do it: </span>
-                                <span className="text-foreground/90">{t.how}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">6. Expected output: </span>
-                                <span className="text-foreground/90">{t.expectedOutput}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">7. Success criteria: </span>
-                                <span className="text-foreground/90">{t.successCriteria}</span>
                               </div>
 
+                              {/* 2. Planned Duration */}
+                              <div className="rounded-xl border border-glass-border/60 bg-background/50 p-3">
+                                <div className="text-[11px] font-semibold tracking-wide text-muted-foreground/90 mb-1">
+                                  2. Planned Duration
+                                </div>
+                                <div className="text-xs font-medium text-foreground leading-relaxed break-words">
+                                  {fmtMin(t.duration)}
+                                </div>
+                              </div>
+
+                              {/* 3. What to do */}
+                              <div className="rounded-xl border border-glass-border/60 bg-background/50 p-3">
+                                <div className="text-[11px] font-semibold tracking-wide text-muted-foreground/90 mb-1">
+                                  3. What to do
+                                </div>
+                                <div className="text-xs text-foreground/90 leading-relaxed break-words">
+                                  {t.what || t.title}
+                                </div>
+                              </div>
+
+                              {/* 4. How to do it */}
+                              <div className="rounded-xl border border-glass-border/60 bg-background/50 p-3">
+                                <div className="text-[11px] font-semibold tracking-wide text-muted-foreground/90 mb-1">
+                                  4. How to do it
+                                </div>
+                                <div className="text-xs text-foreground/90 leading-relaxed break-words">
+                                  {t.how || "Execute in focused block following standard operating procedure."}
+                                </div>
+                              </div>
+
+                              {/* 5. Where */}
+                              <div className="rounded-xl border border-glass-border/60 bg-background/50 p-3">
+                                <div className="text-[11px] font-semibold tracking-wide text-muted-foreground/90 mb-1">
+                                  5. Where
+                                </div>
+                                <div className="text-xs text-foreground/90 leading-relaxed break-words">
+                                  {t.where || "Workspace"}
+                                </div>
+                              </div>
+
+                              {/* 6. Expected Output */}
+                              <div className="rounded-xl border border-glass-border/60 bg-background/50 p-3">
+                                <div className="text-[11px] font-semibold tracking-wide text-muted-foreground/90 mb-1">
+                                  6. Expected Output
+                                </div>
+                                <div className="text-xs text-foreground/90 leading-relaxed break-words">
+                                  {t.expectedOutput || "Task completed with documented result."}
+                                </div>
+                              </div>
+
+                              {/* 7. Success Criteria */}
+                              <div className="rounded-xl border border-glass-border/60 bg-background/50 p-3">
+                                <div className="text-[11px] font-semibold tracking-wide text-muted-foreground/90 mb-1">
+                                  7. Success Criteria
+                                </div>
+                                <div className="text-xs text-foreground/90 leading-relaxed break-words">
+                                  {t.successCriteria || "All stated output criteria met and verified."}
+                                </div>
+                              </div>
+
+                              {/* Recorded Output (If Present) */}
                               {t.output && Object.keys(t.output).length > 0 && (
-                                <div className="mt-2 rounded-lg border border-success/30 bg-success/10 p-2 text-success">
-                                  <div className="font-semibold text-[11px]">Recorded Output:</div>
-                                  <div className="text-[11px]">
+                                <div className="rounded-xl border border-success/30 bg-success/10 p-3 text-success">
+                                  <div className="font-semibold text-[11px] mb-1">Recorded Output:</div>
+                                  <div className="text-xs leading-relaxed break-words">
                                     {Object.entries(t.output)
                                       .map(([k, v]) => `${k}: ${v}`)
                                       .join(" · ")}
@@ -430,11 +475,11 @@ function ExecutePage() {
                                 </div>
                               )}
 
-                              {/* Start/Resume and Finish Controls within expanded details */}
-                              <div className="flex items-center gap-2 pt-2 border-t border-glass-border/50">
-                                {t.status !== "done" && (
-                                  <>
-                                    {t.status === "active" ? (
+                              {/* Start/Resume and Finish Controls clearly separated at the bottom */}
+                              <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 border-t border-glass-border/60 pt-3">
+                                <div>
+                                  {t.status !== "done" && (
+                                    t.status === "active" ? (
                                       <Button
                                         size="sm"
                                         onClick={(e) => {
@@ -442,8 +487,8 @@ function ExecutePage() {
                                           update((s) => pauseTask(s, t.id));
                                         }}
                                       >
-                                        <Pause className="h-3 w-3" />
-                                        Pause
+                                        <Pause className="h-3.5 w-3.5" />
+                                        Pause Task
                                       </Button>
                                     ) : (
                                       <Button
@@ -457,22 +502,25 @@ function ExecutePage() {
                                           }));
                                         }}
                                       >
-                                        <Play className="h-3 w-3" />
-                                        {t.status === "paused" ? "Resume" : "Start"}
+                                        <Play className="h-3.5 w-3.5" />
+                                        {t.status === "paused" ? "Resume Task" : "Start Task"}
                                       </Button>
-                                    )}
-                                    <Button
-                                      size="sm"
-                                      variant="success"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setFinishing(t);
-                                      }}
-                                    >
-                                      <Check className="h-3 w-3" />
-                                      Finish
-                                    </Button>
-                                  </>
+                                    )
+                                  )}
+                                </div>
+
+                                {t.status !== "done" && (
+                                  <Button
+                                    size="sm"
+                                    variant="success"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setFinishing(t);
+                                    }}
+                                  >
+                                    <Check className="h-3.5 w-3.5" />
+                                    Finish Task
+                                  </Button>
                                 )}
                               </div>
                             </div>

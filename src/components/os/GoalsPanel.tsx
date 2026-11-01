@@ -217,7 +217,7 @@ export function GoalsPanel() {
                   min={14}
                   max={90}
                   value={g.levelB.days}
-                  onChange={(e) => setG((x) => ({ ...x, levelB: { ...x.levelB, days: +e.target.value }))}
+                  onChange={(e) => setG((x) => ({ ...x, levelB: { ...x.levelB, days: +e.target.value } }))}
                   className="w-36"
                   aria-label="Milestone window"
                 />

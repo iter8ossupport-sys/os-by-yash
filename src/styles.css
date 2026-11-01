@@ -84,6 +84,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --background: oklch(0.13 0.04 265);
   --foreground: oklch(0.97 0.005 250);
   --card: oklch(0.25 0.05 262 / 0.35);
@@ -126,6 +127,34 @@
     -webkit-font-smoothing: antialiased;
   }
   h1, h2, h3, h4 { font-family: var(--font-display); letter-spacing: -0.02em; }
+
+  /* Dark glass textareas and form controls without browser-native white widgets */
+  textarea, input, select {
+    color-scheme: dark;
+  }
+  textarea {
+    scrollbar-width: thin;
+    scrollbar-color: oklch(0.35 0.05 260 / 0.5) transparent;
+  }
+  textarea::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  textarea::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  textarea::-webkit-scrollbar-thumb {
+    background: oklch(0.35 0.05 260 / 0.5);
+    border-radius: 9999px;
+  }
+  textarea::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.48 0.08 260 / 0.7);
+  }
+  textarea::-webkit-resizer {
+    background: transparent;
+    border-bottom: 2px solid oklch(0.45 0.05 260 / 0.5);
+    border-right: 2px solid oklch(0.45 0.05 260 / 0.5);
+  }
 }
 
 @utility atmosphere {

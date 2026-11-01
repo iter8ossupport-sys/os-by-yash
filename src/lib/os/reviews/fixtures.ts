@@ -1,0 +1,416 @@
+import type {
+  DayRecord,
+  ReviewBottleneck,
+  ReviewImprovement,
+  ReviewSettings,
+} from "../types";
+
+export const defaultReviewSettings: ReviewSettings = {
+  defaultPeriod: "daily",
+  weekStartDay: 1, // Monday
+  trackP2WorkstreamSplits: true,
+  minDataThresholdDays: 3,
+  exportDateFormat: "YYYY-MM-DD",
+  customViews: [],
+};
+
+/**
+ * Realistic development / test fixtures for Yash OS Reviews.
+ * Strictly decoupled from production user state.
+ *
+ * Covers:
+ * - 14-day timeline with active days and realistic gaps (missing days).
+ * - Priority 1, 2, 3 planned and actual minutes.
+ * - Priority 2 workstream A (Cashflow) and B (Fintech Product) outputs.
+ * - Automated closeout records, manual entries, and audit-corrected records.
+ * - Recurring unfinished friction patterns.
+ */
+export const demoReviewDays: DayRecord[] = [
+  {
+    date: "2026-10-19", // Monday (Week 43)
+    state: "finalized",
+    source: "closeout",
+    dayType: "Non-College Day",
+    availableHours: 8,
+    energy: "High",
+    plannedMin: { 1: 180, 2: 120, 3: 60 },
+    actualMin: { 1: 195, 2: 110, 3: 55 },
+    tasksPlanned: 6,
+    tasksDone: 5,
+    outputs: [
+      {
+        priorityId: 1,
+        title: "Ship v2 Auth & Onboarding Flow",
+        text: "Clean email magic link auth deployed to staging. Verified on mobile.",
+        projectId: "demo-killarity",
+      },
+      {
+        priorityId: 2,
+        title: "Run today's LBES cash session",
+        text: "Executed EUR/USD morning session according to playbook. +1.4% gain logged.",
+        workstream: "A",
+        projectId: "demo-lbes",
+      },
+      {
+        priorityId: 2,
+        title: "Model LBES fee architecture",
+        text: "Drafted Stripe Connect fee split proposal for beta product customers.",
+        workstream: "B",
+        projectId: "demo-lbes",
+      },
+      {
+        priorityId: 3,
+        title: "Study one fundamental for today's work",
+        text: "Studied TanStack Router SSR hydration edge-cases. Noted in Knowledge.",
+      },
+    ],
+    outcomesAchieved: [1, 2],
+    unfinished: ["Write release checklist"],
+    learning: "Pre-thinking auth state edge-cases saved 2 hours of post-deploy firefighting.",
+    p2WorkstreamMinutes: { workstreamA: 60, workstreamB: 50 },
+    finalizedAt: "2026-10-19T21:40:00.000Z",
+  },
+  {
+    date: "2026-10-20", // Tuesday
+    state: "finalized",
+    source: "closeout",
+    dayType: "College Day",
+    availableHours: 4,
+    energy: "Medium",
+    plannedMin: { 1: 120, 2: 90, 3: 30 },
+    actualMin: { 1: 110, 2: 95, 3: 30 },
+    tasksPlanned: 4,
+    tasksDone: 4,
+    outputs: [
+      {
+        priorityId: 1,
+        title: "Talk to 2 beta users",
+        text: "Interviewed Alex and Priya on onboarding confusion. Pain point: billing page.",
+        projectId: "demo-killarity",
+      },
+      {
+        priorityId: 2,
+        title: "Run LBES cash session",
+        text: "Executed session under rules. Flat outcome, zero rule violations.",
+        workstream: "A",
+        projectId: "demo-lbes",
+      },
+    ],
+    outcomesAchieved: [1, 2, 3],
+    unfinished: [],
+    learning: "User quotes are 10x more actionable than hypothetical telemetry.",
+    p2WorkstreamMinutes: { workstreamA: 65, workstreamB: 30 },
+    finalizedAt: "2026-10-20T22:15:00.000Z",
+  },
+  {
+    date: "2026-10-21", // Wednesday
+    state: "finalized",
+    source: "closeout",
+    dayType: "College Day",
+    availableHours: 4,
+    energy: "Low",
+    plannedMin: { 1: 120, 2: 60, 3: 60 },
+    actualMin: { 1: 90, 2: 60, 3: 40 },
+    tasksPlanned: 5,
+    tasksDone: 3,
+    outputs: [
+      {
+        priorityId: 1,
+        title: "Fix billing page confusion",
+        text: "Simplified pricing tier cards to 2 options.",
+        projectId: "demo-killarity",
+      },
+      {
+        priorityId: 2,
+        title: "LBES backtest batch",
+        text: "Backtested 30 sessions with new trailing stop parameter.",
+        workstream: "A",
+        projectId: "demo-lbes",
+      },
+    ],
+    outcomesAchieved: [1],
+    unfinished: ["Automate one manual LBES step", "Write a lesson into Knowledge"],
+    learning: "Low energy days require scoping to 1 critical task only.",
+    bottlenecksNoted: ["Automate one manual LBES step stalled on webhook permissions"],
+    p2WorkstreamMinutes: { workstreamA: 60, workstreamB: 0 },
+    finalizedAt: "2026-10-21T21:00:00.000Z",
+  },
+  {
+    date: "2026-10-22", // Thursday
+    state: "finalized",
+    source: "closeout",
+    dayType: "Non-College Day",
+    availableHours: 8,
+    energy: "High",
+    plannedMin: { 1: 180, 2: 150, 3: 60 },
+    actualMin: { 1: 200, 2: 160, 3: 60 },
+    tasksPlanned: 6,
+    tasksDone: 5,
+    outputs: [
+      {
+        priorityId: 1,
+        title: "Deploy public beta build",
+        text: "Sent invite links to 15 waitlist signups.",
+        projectId: "demo-killarity",
+      },
+      {
+        priorityId: 2,
+        title: "Build LBES API webhook bridge",
+        text: "Built cloudflare worker webhook listener to automate session logging.",
+        workstream: "B",
+        projectId: "demo-lbes",
+      },
+    ],
+    outcomesAchieved: [1, 2],
+    unfinished: ["Automate one manual LBES step"],
+    learning: "Cloudflare workers are ideal for low-latency trading webhooks.",
+    p2WorkstreamMinutes: { workstreamA: 40, workstreamB: 120 },
+    finalizedAt: "2026-10-22T22:30:00.000Z",
+  },
+  {
+    date: "2026-10-23", // Friday
+    state: "corrected",
+    source: "corrected",
+    dayType: "Non-College Day",
+    availableHours: 7,
+    energy: "Medium",
+    plannedMin: { 1: 180, 2: 120, 3: 60 },
+    actualMin: { 1: 150, 2: 130, 3: 45 },
+    tasksPlanned: 5,
+    tasksDone: 4,
+    outputs: [
+      {
+        priorityId: 1,
+        title: "Collect day-1 feedback from beta invites",
+        text: "3 users activated; 1 reported Safari CSS glitch.",
+        projectId: "demo-killarity",
+      },
+      {
+        priorityId: 2,
+        title: "Live trading session + audit",
+        text: "Executed session with zero errors. Manual logging verified.",
+        workstream: "A",
+        projectId: "demo-lbes",
+      },
+    ],
+    outcomesAchieved: [2],
+    unfinished: ["Write Safari CSS patch"],
+    learning: "Safari flexbox handles gap differently on older iOS.",
+    p2WorkstreamMinutes: { workstreamA: 80, workstreamB: 50 },
+    finalizedAt: "2026-10-23T20:30:00.000Z",
+    correctedAt: "2026-10-24T09:00:00.000Z",
+    auditHistory: [
+      {
+        id: "aud-1",
+        timestamp: "2026-10-24T09:00:00.000Z",
+        field: "actualMin[1]",
+        oldValue: 120,
+        newValue: 150,
+        reason: "Adjusted 30m spent verifying Safari bug that was logged after midnight.",
+        source: "user_correction",
+      },
+    ],
+  },
+  // Note: 2026-10-24 (Saturday) was a planned rest day (missing in history)
+  {
+    date: "2026-10-25", // Sunday (End of Week 43)
+    state: "finalized",
+    source: "manual",
+    dayType: "Weekend/Holiday",
+    availableHours: 5,
+    energy: "Medium",
+    plannedMin: { 1: 90, 2: 90, 3: 60 },
+    actualMin: { 1: 85, 2: 95, 3: 50 },
+    tasksPlanned: 4,
+    tasksDone: 4,
+    outputs: [
+      {
+        priorityId: 1,
+        title: "Safari CSS patch deployment",
+        text: "Pushed mobile Safari prefix fix and verified on iOS 17.",
+        projectId: "demo-killarity",
+      },
+      {
+        priorityId: 2,
+        title: "Weekly cash log audit",
+        text: "Weekly LBES review completed. Net positive week.",
+        workstream: "A",
+        projectId: "demo-lbes",
+      },
+      {
+        priorityId: 3,
+        title: "Synthesis of trading + product patterns",
+        text: "Documented overlap between systematic risk management and MVP scoping.",
+      },
+    ],
+    outcomesAchieved: [1, 2, 3],
+    unfinished: [],
+    learning: "Risk management in trading translates directly to scoping small releases.",
+    p2WorkstreamMinutes: { workstreamA: 95, workstreamB: 0 },
+    finalizedAt: "2026-10-25T19:00:00.000Z",
+  },
+  // Week 44 Records
+  {
+    date: "2026-10-26", // Monday (Week 44)
+    state: "finalized",
+    source: "closeout",
+    dayType: "Non-College Day",
+    availableHours: 8,
+    energy: "High",
+    plannedMin: { 1: 200, 2: 120, 3: 60 },
+    actualMin: { 1: 210, 2: 110, 3: 60 },
+    tasksPlanned: 6,
+    tasksDone: 6,
+    outputs: [
+      {
+        priorityId: 1,
+        title: "First paying customer outreach",
+        text: "2 beta users offered early-bird tier. 1 verbally agreed to invoice.",
+        projectId: "demo-killarity",
+      },
+      {
+        priorityId: 2,
+        title: "Execute weekly trading routine session 1",
+        text: "Disciplined execution. Logged session result.",
+        workstream: "A",
+        projectId: "demo-lbes",
+      },
+      {
+        priorityId: 2,
+        title: "LBES Customer Portal wireframe",
+        text: "Created low-fi dashboard wireframe for fintech clients.",
+        workstream: "B",
+        projectId: "demo-lbes",
+      },
+    ],
+    outcomesAchieved: [1, 2, 3],
+    unfinished: [],
+    learning: "Direct outreach with a tailored proposal converts 10x better than generic landing pages.",
+    p2WorkstreamMinutes: { workstreamA: 60, workstreamB: 50 },
+    finalizedAt: "2026-10-26T21:45:00.000Z",
+  },
+  {
+    date: "2026-10-27", // Tuesday
+    state: "finalized",
+    source: "closeout",
+    dayType: "College Day",
+    availableHours: 4,
+    energy: "Medium",
+    plannedMin: { 1: 120, 2: 90, 3: 30 },
+    actualMin: { 1: 120, 2: 85, 3: 35 },
+    tasksPlanned: 4,
+    tasksDone: 4,
+    outputs: [
+      {
+        priorityId: 1,
+        title: "Stripe invoice generated & sent",
+        text: "Sent first production invoice for Killarity v2 beta tier ($99/mo).",
+        projectId: "demo-killarity",
+      },
+      {
+        priorityId: 2,
+        title: "LBES morning execution session",
+        text: "Session executed smoothly.",
+        workstream: "A",
+        projectId: "demo-lbes",
+      },
+    ],
+    outcomesAchieved: [1, 2],
+    unfinished: [],
+    learning: "First dollar earned from software changes founder psychology permanently.",
+    p2WorkstreamMinutes: { workstreamA: 85, workstreamB: 0 },
+    finalizedAt: "2026-10-27T22:00:00.000Z",
+  },
+];
+
+export const demoBottlenecks: ReviewBottleneck[] = [
+  {
+    id: "bot-1",
+    priorityId: 1,
+    projectId: "demo-killarity",
+    title: "Manual user conversation scheduling",
+    description: "Reaching out via DMs and waiting for replies causes 2-day lags per conversation.",
+    severity: "medium",
+    status: "mitigating",
+    firstObservedDate: "2026-10-20",
+    lastObservedDate: "2026-10-26",
+    occurrenceCount: 3,
+    sourceDayDates: ["2026-10-20", "2026-10-23", "2026-10-26"],
+    mitigationPlan: "Include direct Cal.com calendar link in first outreach DM.",
+  },
+  {
+    id: "bot-2",
+    priorityId: 2,
+    projectId: "demo-lbes",
+    title: "Manual session data entry",
+    description: "Entering execution prices by hand takes 20 minutes and is prone to transcription typos.",
+    severity: "high",
+    status: "active",
+    firstObservedDate: "2026-10-21",
+    lastObservedDate: "2026-10-25",
+    occurrenceCount: 4,
+    sourceDayDates: ["2026-10-21", "2026-10-22", "2026-10-23", "2026-10-25"],
+    mitigationPlan: "Complete automated webhook bridge for LBES execution logs.",
+  },
+  {
+    id: "bot-3",
+    priorityId: 3,
+    title: "Learning not linked to next day's tasks",
+    description: "Study takeaways often stayed in notes without immediate execution inside active projects.",
+    severity: "low",
+    status: "resolved",
+    firstObservedDate: "2026-10-19",
+    lastObservedDate: "2026-10-22",
+    occurrenceCount: 2,
+    sourceDayDates: ["2026-10-19", "2026-10-21"],
+    resolvedAt: "2026-10-25",
+    resolutionNotes: "Enforced rule: every Priority 3 study takeaway must tag a specific task in the next plan.",
+  },
+];
+
+export const demoImprovements: ReviewImprovement[] = [
+  {
+    id: "imp-1",
+    periodType: "weekly",
+    periodRef: "2026-W43",
+    priorityId: 2,
+    projectId: "demo-lbes",
+    problemStatement: "Manual LBES step was left unfinished across 2 consecutive days due to webhook permissions.",
+    evidence: {
+      metrics: ["Unfinished tasks: 2", "Lost time: ~45m/day on manual entry"],
+      dayDates: ["2026-10-21", "2026-10-22"],
+      taskTitles: ["Automate one manual LBES step"],
+    },
+    recommendation: "Scope the automation to a single Cloudflare Worker webhook instead of a full local daemon.",
+    status: "implemented",
+    decisionDate: "2026-10-23",
+    decisionNote: "Approved. Building simple worker webhook.",
+    approvedAction: "Build Cloudflare worker webhook for LBES logs.",
+    expectedResult: "Cut manual session logging time from 20m to 0m.",
+    targetMetric: "Zero manual data entry time",
+    evaluatedAt: "2026-10-26",
+    evaluationOutcome: "succeeded",
+    evaluationNotes: "Webhook runs reliably. Saved 20 minutes on Monday session.",
+    createdAt: "2026-10-22T20:00:00.000Z",
+  },
+  {
+    id: "imp-2",
+    periodType: "daily",
+    periodRef: "2026-10-26",
+    priorityId: 1,
+    projectId: "demo-killarity",
+    problemStatement: "Beta invites had low immediate response because they lacked a personal demo video link.",
+    evidence: {
+      metrics: ["Activation rate: 20% on day 1"],
+      dayDates: ["2026-10-23"],
+    },
+    recommendation: "Record a 60-second personalized Loom for each customer outreach instead of plain text.",
+    status: "approved",
+    decisionDate: "2026-10-27",
+    decisionNote: "Approved for the next 5 customer reach-outs.",
+    approvedAction: "Send 60-second Loom with each beta invite.",
+    expectedResult: "Increase invite activation from 20% to > 50%.",
+    createdAt: "2026-10-27T10:00:00.000Z",
+  },
+];
+

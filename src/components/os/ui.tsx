@@ -29,9 +29,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLBut
 );
 Button.displayName = "Button";
 
-const field = "w-full rounded-xl border border-input bg-secondary/60 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 outline-none transition focus:border-ring focus:ring-2 focus:ring-ring/30";
+const field = "w-full rounded-xl border border-input bg-secondary/60 dark:bg-[#0b1220]/70 dark:border-white/10 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/70 outline-none transition [color-scheme:dark] focus:border-ring focus:ring-2 focus:ring-ring/30";
 export const Input = (p: InputHTMLAttributes<HTMLInputElement>) => <input {...p} className={cn(field, "h-10", p.className)} />;
-export const Textarea = (p: TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea rows={3} {...p} className={cn(field, p.className)} />;
+export const Textarea = (p: TextareaHTMLAttributes<HTMLTextAreaElement>) => <textarea rows={3} {...p} className={cn(field, "min-h-[76px] resize-y leading-relaxed", p.className)} />;
 export function Select({ value, onChange, options, className }: { value: string; onChange: (v: string) => void; options: { value: string; label: string }[]; className?: string }) {
   return (
     <select value={value} onChange={(e) => onChange(e.target.value)} className={cn(field, "h-10", className)}>

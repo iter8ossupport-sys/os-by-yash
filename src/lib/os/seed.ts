@@ -144,14 +144,24 @@ export const initialState: OSState = {
   activeTaskId: null,
   interruptedTaskId: null,
   projects: [
-    { id: "demo-killarity", name: "Killarity Engine", objective: "Ship v2 and get the first real users.", priorityId: 1, status: "active", hypothesis: "", milestone: "Ship v2 and collect real user feedback", metrics: "", bottlenecks: "No user conversations yet", evidence: "", decisions: "", learning: "", documents: "", createdAt: today(), demo: true },
-    { id: "demo-lbes", name: "LBES", objective: "Generate cash to fund the startup.", priorityId: 2, status: "active", hypothesis: "", milestone: "Repeatable weekly cash routine", metrics: "", bottlenecks: "Manual process", evidence: "", decisions: "", learning: "", documents: "", createdAt: today(), demo: true },
-    { id: "demo-skills", name: "Product + Trading Skills", objective: "Learn fundamentals that improve execution.", priorityId: 3, status: "active", hypothesis: "", milestone: "Apply two execution skills", metrics: "", bottlenecks: "", evidence: "", decisions: "", learning: "", documents: "", createdAt: today(), demo: true },
+    { id: "demo-killarity", name: "Killarity Engine", objective: "Ship v2 and get the first real users.", priorityId: 1, status: "active", hypothesis: "", milestone: "Ship v2 and collect real user feedback", metrics: "", bottlenecks: "No user conversations yet", evidence: "", decisions: "", learning: "", documents: "", createdAt: today(), demo: true, deadline: "", docs: [] },
+    { id: "demo-lbes", name: "LBES", objective: "Generate cash to fund the startup.", priorityId: 2, status: "active", hypothesis: "", milestone: "Repeatable weekly cash routine", metrics: "", bottlenecks: "Manual process", evidence: "", decisions: "", learning: "", documents: "", createdAt: today(), demo: true, workstream: "A", deadline: "", docs: [] },
+    { id: "demo-skills", name: "Product + Trading Skills", objective: "Learn fundamentals that improve execution.", priorityId: 3, status: "active", hypothesis: "", milestone: "Apply two execution skills", metrics: "", bottlenecks: "", evidence: "", decisions: "", learning: "", documents: "", createdAt: today(), demo: true, learningCategories: ["Practical execution and experiments", "Skill development"], deadline: "", docs: [] },
   ],
   knowledge: [
     { id: "demo-k1", title: "Operating loop", type: "Note", body: "PRE-THINK → ACT → POST-THINK → IMPROVE → REPEAT.", priorityId: undefined, tags: "system, demo", createdAt: today(), demo: true },
   ],
   history: [],
+  bottlenecks: [],
+  improvements: [],
+  reviewSettings: {
+    defaultPeriod: "daily",
+    weekStartDay: 1,
+    trackP2WorkstreamSplits: true,
+    minDataThresholdDays: 3,
+    exportDateFormat: "YYYY-MM-DD",
+    customViews: [],
+  },
   prefs: {
     timer: true,
     notifications: false,

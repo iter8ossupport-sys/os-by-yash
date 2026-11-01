@@ -82,6 +82,39 @@ export function buildDayRecord(p: Plan, learning: string, now = Date.now()): Day
     actualMin[t.priorityId] += Math.round(elapsed(t, now) / 60000);
   });
   const done = sel.filter((t) => t.status === "done");
+
+  // Priority 2 Workstream A vs B minute breakdown
+  let p2WorkstreamAMin = 0;
+  let p2WorkstreamBMin = 0;
+  done
+    .filter((t) => t.priorityId === 2)
+    .forEach((t) => {
+      const ws = t.output?.["Workstream"];
+      const min = Math.round(elapsed(t, now) / 60000);
+      if (ws === "Fintech Product Capability" || ws === "B") {
+        p2WorkstreamBMin += min;
+      } else {
+        p2WorkstreamAMin += min;
+      }
+    });
+
+  const taskSnapshots = sel.map((t) => ({
+    id: `snap-${t.id}`,
+    taskId: t.id,
+    priorityId: t.priorityId,
+    title: t.title,
+    durationPlannedMin: t.duration,
+    durationActualMin: Math.round(elapsed(t, now) / 60000),
+    kind: t.kind,
+    status: (t.status === "done" ? "done" : "unfinished") as "done" | "unfinished",
+    expectedOutput: t.expectedOutput,
+    actualOutput: t.output,
+    outcomeAchieved: Boolean(t.outcomeAchieved),
+    workstream: t.output?.["Workstream"],
+    where: t.where,
+    timeBlock: t.timeBlock,
+  }));
+
   return {
     date: p.context.date,
     plannedMin,
@@ -103,6 +136,17 @@ export function buildDayRecord(p: Plan, learning: string, now = Date.now()): Day
     outcomesAchieved: ([1, 2, 3] as PriorityId[]).filter((id) => done.some((t) => t.priorityId === id && t.outcomeAchieved)),
     unfinished: sel.filter((t) => t.status !== "done").map((t) => t.title),
     learning,
+    state: "finalized",
+    source: "closeout",
+    dayType: p.context.dayType,
+    availableHours: p.context.hours,
+    energy: p.context.energy,
+    p2WorkstreamMinutes: {
+      workstreamA: p2WorkstreamAMin,
+      workstreamB: p2WorkstreamBMin,
+    },
+    taskSnapshots,
+    finalizedAt: new Date(now).toISOString(),
   };
 }
 
@@ -298,3 +342,12 @@ export function deleteProject(s: OSState, projectId: string): OSState {
 
   return syncPrioritiesWithProjects({ ...s, projects: updatedProjects, priorities, knowledge });
 }
+
+export {
+  correctDayRecord,
+  addImprovement,
+  updateImprovement,
+  addOrUpdateBottleneck,
+  resolveBottleneck,
+  updateReviewSettings,
+} from "./reviews/operations";

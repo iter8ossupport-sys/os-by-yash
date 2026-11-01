@@ -16,8 +16,22 @@ export function OSProvider({ children }: { children: ReactNode }) {
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) {
-        const parsed = { ...initialState, ...JSON.parse(raw) };
-        setState(syncPrioritiesWithProjects(parsed));
+        const parsed = JSON.parse(raw);
+        const hydrated: OSState = {
+          ...initialState,
+          ...parsed,
+          bottlenecks: parsed.bottlenecks ?? [],
+          improvements: parsed.improvements ?? [],
+          reviewSettings: parsed.reviewSettings ?? {
+            defaultPeriod: "daily",
+            weekStartDay: 1,
+            trackP2WorkstreamSplits: true,
+            minDataThresholdDays: 3,
+            exportDateFormat: "YYYY-MM-DD",
+            customViews: [],
+          },
+        };
+        setState(syncPrioritiesWithProjects(hydrated));
       }
     } catch { /* ignore */ }
     loaded.current = true;
