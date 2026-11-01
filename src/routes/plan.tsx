@@ -100,6 +100,7 @@ function PlanPage() {
       if (fromIdx < 0 || toIdx < 0 || fromIdx >= pTasks.length || toIdx >= pTasks.length) return d;
       const taskA = pTasks[fromIdx];
       const taskB = pTasks[toIdx];
+      if (!taskA || !taskB) return d;
       const idxA = d.tasks.indexOf(taskA);
       const idxB = d.tasks.indexOf(taskB);
       const nextTasks = [...d.tasks];
@@ -117,6 +118,7 @@ function PlanPage() {
       if (curIdx < 0 || targetIdx < 0 || targetIdx >= selected.length) return d;
       const taskA = selected[curIdx];
       const taskB = selected[targetIdx];
+      if (!taskA || !taskB) return d;
       const idxA = d.tasks.indexOf(taskA);
       const idxB = d.tasks.indexOf(taskB);
       const nextTasks = [...d.tasks];
@@ -175,7 +177,7 @@ function PlanPage() {
         <Glass className="p-6" key={stage}>
           <div className="fade-up">
             <div className="mb-6 flex items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold">{STAGES[stage - 1][0]}</h2>
+              <h2 className="text-xl font-semibold">{STAGES[stage - 1]?.[0]}</h2>
               <Badge>Step {stage} of 7</Badge>
             </div>
 
@@ -331,7 +333,7 @@ function PlanPage() {
                     ["Remaining", +(ctx.hours - allocated).toFixed(1)],
                   ].map(([l, v]) => (
                     <div key={l} className="rounded-2xl bg-secondary/40 p-4">
-                      <div className={cn("font-display text-2xl font-semibold", l === "Remaining" && +v < 0 && "text-destructive")}>
+                      <div className={cn("font-display text-2xl font-semibold", l === "Remaining" && v !== undefined && +v < 0 && "text-destructive")}>
                         {v}h
                       </div>
                       <div className="text-xs text-muted-foreground">{l}</div>

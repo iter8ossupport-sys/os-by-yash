@@ -154,8 +154,8 @@ describe("Priority ↔ Project synchronization", () => {
     };
 
     const s = syncPrioritiesWithProjects(legacyState);
-    expect(s.priorities[0].activeProjectId).toBe("demo-killarity");
-    expect(s.priorities[1].activeProjectId).toBe("demo-lbes");
-    expect(s.priorities[2].activeProjectId).toBe("demo-skills");
+    expect(s.priorities[0]!.activeProjectId).toBe("demo-killarity");
+    expect(s.priorities[1]!.activeProjectId).toBe("demo-lbes");
+    expect(s.priorities[2]!.activeProjectId).toBe("demo-skills");
   });
 });

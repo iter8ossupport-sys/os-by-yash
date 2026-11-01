@@ -191,6 +191,8 @@ export interface ReviewPeriodSummary {
   startDate: string; // Inclusive YYYY-MM-DD
   endDate: string; // Inclusive YYYY-MM-DD
   daysIncluded: string[]; // YYYY-MM-DD list
+  expectedDaysCount?: number | undefined;
+  missingDaysCount?: number | undefined;
 
   // Activity Metrics
   totalPlannedHours: number;
@@ -242,6 +244,8 @@ export interface ReviewBottleneck {
   resolutionNotes?: string | undefined;
 }
 
+export type ImprovementOutcome = "succeeded" | "partially_succeeded" | "failed" | "untested";
+
 export interface ReviewImprovement {
   id: string;
   periodType: ReviewPeriodType;
@@ -273,10 +277,9 @@ export interface ReviewImprovement {
   // 6. Expected Result
   expectedResult?: string | undefined;
   targetMetric?: string | undefined;
-
   // 7. Evaluation
   evaluatedAt?: string | undefined;
-  evaluationOutcome?: "succeeded" | "partially_succeeded" | "failed" | "untested" | undefined;
+  evaluationOutcome?: ImprovementOutcome | undefined;
   evaluationNotes?: string | undefined;
 
   // 8. Learning
@@ -299,16 +302,184 @@ export interface MilestoneForecast {
   evidenceBasis: string;
 }
 
+export interface PeriodReviewRecord {
+  id: string; // e.g. "2026-W44" or "2026-M11"
+  type: ReviewPeriodType;
+  startDate: string; // YYYY-MM-DD (inclusive)
+  endDate: string; // YYYY-MM-DD (inclusive)
+  daysIncluded: string[]; // YYYY-MM-DD list of actual days recorded
+  missingDaysCount: number; // Gap days within the period range
+
+  // Metrics Snapshots (immutable once finalized)
+  totalPlannedHours: number;
+  totalActualHours: number;
+  hoursByPriority: Record<PriorityId, number>;
+  plannedHoursByPriority: Record<PriorityId, number>;
+  tasksPlannedTotal: number;
+  tasksDoneTotal: number;
+  taskCompletionRate: number; // 0 to 100
+
+  // Priority 2 Split
+  p2HoursWorkstreamA: number;
+  p2HoursWorkstreamB: number;
+  p2OutputsWorkstreamA: number;
+  p2OutputsWorkstreamB: number;
+
+  // Outcome Intelligence
+  outcomesPlannedTotal: number;
+  outcomesAchievedTotal: number;
+  outcomesRate: number; // 0 to 100
+  outcomesByPriority: Record<PriorityId, { planned: number; achieved: number }>;
+
+  // Qualitative Synthesis & Conclusions
+  executiveSummary: string;
+  keyOutputs: { date: string; priorityId: PriorityId; title: string; text: string; workstream?: string | undefined }[];
+  recurringBottlenecks: string[];
+  learningsSummary: { date: string; text: string }[];
+  approvedImprovementIds: string[];
+  levelCProgressSnapshot?: Record<PriorityId, number> | undefined;
+
+  finalizedAt: string; // ISO 8601
+  auditHistory?: AuditRecord[] | undefined;
+}
+
+export type AIInsightType = "fact" | "insight" | "recommendation";
+
+export interface ReviewAIInsight {
+  id: string;
+  type: AIInsightType;
+  title: string;
+  body: string;
+  priorityId?: PriorityId | undefined;
+  projectId?: string | undefined;
+  evidence: {
+    sourcePeriod: string;
+    dataPoints: string[];
+    confidence: "High" | "Medium" | "Low";
+    insufficientEvidence: boolean;
+  };
+  recommendedAction?: string | undefined;
+  status: "active" | "dismissed" | "converted_to_improvement";
+  createdAt: string;
+}
+
+export type AlertSeverity = "info" | "warning" | "critical";
+
+export interface ReviewAlert {
+  id: string;
+  title: string;
+  message: string;
+  severity: AlertSeverity;
+  category: "workstream_imbalance" | "chronic_bottleneck" | "realism_drift" | "data_gap";
+  periodRef: string;
+  timestamp: string;
+  dismissed?: boolean | undefined;
+}
+
+export interface CustomMetricDefinition {
+  id: string;
+  name: string;
+  description: string;
+  formula: "ratio" | "rate" | "velocity" | "yield_per_hour";
+  numerator: "actualHours" | "tasksDone" | "outcomesAchieved" | "p2HoursA" | "p2HoursB";
+  denominator: "plannedHours" | "tasksPlanned" | "totalActualHours" | "recordedDays";
+  unit: "%" | "h" | "ratio" | "count";
+  targetValue: number;
+  priorityFilter?: PriorityId | undefined;
+}
+
+export interface AlertSettings {
+  workstreamImbalanceThreshold: number; // e.g. 75 (%)
+  chronicBottleneckThreshold: number; // e.g. 2 (occurrences)
+  realismDriftMin: number; // e.g. 0.7
+  realismDriftMax: number; // e.g. 1.3
+  dataGapDaysThreshold: number; // e.g. 2 (days)
+  enabledAlerts: {
+    workstreamImbalance: boolean;
+    chronicBottleneck: boolean;
+    realismDrift: boolean;
+    dataGap: boolean;
+  };
+}
+
+export interface ReflectionTemplate {
+  daily: string[];
+  weekly: string[];
+  monthly: string[];
+}
+
+export interface ForecastSnapshot {
+  id: string;
+  priorityId: PriorityId;
+  milestoneTitle: string;
+  predictedDate: string;
+  predictedWeeks: number;
+  hoursNeeded?: number | undefined;
+  velocityBasisHoursPerWeek?: number | undefined;
+  confidenceScore?: "Low" | "Medium" | "High" | undefined;
+  createdAt: string;
+  actualDeliveredDate?: string | undefined;
+  status: "projecting" | "delivered" | "missed";
+  accuracyVarianceDays?: number | undefined; // actual - predicted in days
+  calibrationRating?: "accurate" | "optimistic_bias" | "conservative_bias" | undefined;
+}
+
+export interface ReportShareConfig {
+  id: string;
+  title?: string | undefined;
+  recipient?: string | undefined;
+  reportType?: "daily" | "weekly" | "monthly" | "history" | "period" | undefined;
+  reportId?: string | undefined;
+  periodType?: "daily" | "weekly" | "monthly" | "history" | "period" | undefined;
+  periodRef?: string | undefined;
+  permissionLevel: "summary_only" | "full_with_reflections" | "anonymized_founder";
+  includeFinancials: boolean; // hide/redact P2 cashflow trading details
+  includeAuditHistory: boolean;
+  shareToken: string; // client-generated token
+  expiresAt?: string | undefined;
+  createdAt: string;
+}
+
+export interface CustomReviewView {
+  id: string;
+  name: string;
+  priorityFilter?: PriorityId | undefined;
+  projectIdFilter?: string | undefined;
+  dateRangePreset?: "last_7_days" | "last_14_days" | "last_30_days" | "last_90_days" | "custom" | undefined;
+  customStartDate?: string | undefined;
+  customEndDate?: string | undefined;
+  selectedMetricCards?: string[] | undefined;
+  chartTypePreference?: "bar" | "line" | "stacked" | "distribution" | undefined;
+}
+
 export interface ReviewSettings {
   defaultPeriod: "daily" | "weekly" | "monthly" | "history";
   weekStartDay: 1 | 0; // 1 = Monday, 0 = Sunday
   trackP2WorkstreamSplits: boolean;
   minDataThresholdDays: number;
   exportDateFormat: "YYYY-MM-DD" | "DD/MM/YYYY";
-  customViews: { id: string; name: string; priorityFilter?: PriorityId | undefined; dateRange?: string | undefined }[];
+  customViews: CustomReviewView[];
+  customMetrics?: CustomMetricDefinition[] | undefined;
+  alertSettings?: AlertSettings | undefined;
+  reflectionTemplates?: ReflectionTemplate | undefined;
+}
+
+export interface ProjectPerformanceSummary {
+  projectId: string;
+  totalActualHours: number;
+  totalPlannedHours: number;
+  tasksPlannedTotal: number;
+  tasksDoneTotal: number;
+  taskCompletionRate: number; // 0 to 100
+  outputsCount: number;
+  outputs: { date: string; title: string; text: string; workstream?: string | undefined }[];
+  activeDaysCount: number;
+  firstActiveDate?: string | undefined;
+  lastActiveDate?: string | undefined;
 }
 
 export interface OSState {
+  schemaVersion?: number | undefined;
   theme: Theme;
   userName: string;
   foundation: { northStar: string; northStarLong: string; mission: string; trajectory: string; phases: string[] };
@@ -327,5 +498,10 @@ export interface OSState {
   // Reviews Data Foundation additions
   bottlenecks?: ReviewBottleneck[] | undefined;
   improvements?: ReviewImprovement[] | undefined;
+  periodReviews?: PeriodReviewRecord[] | undefined;
+  aiInsights?: ReviewAIInsight[] | undefined;
+  reviewAlerts?: ReviewAlert[] | undefined;
   reviewSettings?: ReviewSettings | undefined;
+  forecastHistory?: ForecastSnapshot[] | undefined;
+  sharedReports?: ReportShareConfig[] | undefined;
 }

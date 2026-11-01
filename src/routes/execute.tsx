@@ -8,12 +8,14 @@ import type { PriorityId, Task } from "@/lib/os/types";
 import { cn } from "@/lib/utils";
 import { Badge, Button, Glass, Input, Label, Modal, PageHeader, PriorityIcon, Progress, Textarea, priorityTone } from "@/components/os/ui";
 
-type Search = { emergency?: number; closeout?: number };
+type Search = { emergency?: number | undefined; closeout?: number | undefined };
 export const Route = createFileRoute("/execute")({
-  validateSearch: (s: Record<string, unknown>): Search => ({
-    emergency: s.emergency ? 1 : undefined,
-    closeout: s.closeout ? 1 : undefined,
-  }),
+  validateSearch: (s: Record<string, unknown>): Search => {
+    const res: Search = {};
+    if (s["emergency"]) res.emergency = 1;
+    if (s["closeout"]) res.closeout = 1;
+    return res;
+  },
   head: () => ({
     meta: [
       { title: "Execute — Yash OS" },
@@ -846,7 +848,7 @@ function FinishDialog({
               <Textarea
                 rows={2}
                 placeholder="Key takeaways and how they will improve future execution..."
-                value={o.Notes ?? ""}
+                value={o["Notes"] ?? ""}
                 onChange={(e) => setO({ ...o, Notes: e.target.value })}
               />
             </div>

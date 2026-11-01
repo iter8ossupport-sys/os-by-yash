@@ -29,7 +29,7 @@ export function parseDurationInput(raw: string): DurationParseResult {
     };
   }
 
-  const num = parseFloat(match[1]);
+  const num = parseFloat(match[1] ?? "");
   if (isNaN(num) || num <= 0) {
     return {
       valid: false,

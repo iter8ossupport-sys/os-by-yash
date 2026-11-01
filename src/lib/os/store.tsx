@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import { initialState } from "./seed";
 import { syncPrioritiesWithProjects } from "./logic";
+import { migrateOSState } from "./reviews/migrations";
 import type { OSState } from "./types";
 
 const KEY = "yash-os-v1";
@@ -17,21 +18,7 @@ export function OSProvider({ children }: { children: ReactNode }) {
       const raw = localStorage.getItem(KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
-        const hydrated: OSState = {
-          ...initialState,
-          ...parsed,
-          bottlenecks: parsed.bottlenecks ?? [],
-          improvements: parsed.improvements ?? [],
-          reviewSettings: parsed.reviewSettings ?? {
-            defaultPeriod: "daily",
-            weekStartDay: 1,
-            trackP2WorkstreamSplits: true,
-            minDataThresholdDays: 3,
-            exportDateFormat: "YYYY-MM-DD",
-            customViews: [],
-          },
-        };
-        setState(syncPrioritiesWithProjects(hydrated));
+        setState(migrateOSState(parsed));
       }
     } catch { /* ignore */ }
     loaded.current = true;

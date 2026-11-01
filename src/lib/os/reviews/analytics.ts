@@ -1,7 +1,12 @@
 import type {
+  AlertSettings,
+  CustomMetricDefinition,
   DayRecord,
   MilestoneForecast,
   PriorityId,
+  ProjectPerformanceSummary,
+  ReviewAIInsight,
+  ReviewAlert,
   ReviewPeriodSummary,
   ReviewPeriodType,
   ReviewImprovement,
@@ -267,12 +272,19 @@ export function calculatePeriodSummary(
     .map(([title, data]) => ({ title, count: data.count, priorityId: data.priorityId }))
     .sort((a, b) => b.count - a.count);
 
+  const startMs = new Date(startDate).getTime();
+  const endMs = new Date(endDate).getTime();
+  const expectedDaysCount = Math.max(1, Math.round((endMs - startMs) / 864e5) + 1);
+  const missingDaysCount = Math.max(0, expectedDaysCount - daysIncluded.length);
+
   return {
     id,
     type: periodType,
     startDate,
     endDate,
     daysIncluded,
+    expectedDaysCount,
+    missingDaysCount,
     totalPlannedHours: Math.round((totalPlannedMin / 60) * 10) / 10,
     totalActualHours: Math.round((totalActualMin / 60) * 10) / 10,
     hoursByPriority,
@@ -551,4 +563,351 @@ export function calculateImprovementStats(improvements: ReviewImprovement[] = []
     successRate,
   };
 }
+
+/**
+ * Scans period performance and execution patterns to generate smart operational alerts.
+ */
+export function generatePeriodAlerts(
+  summary: ReviewPeriodSummary,
+  records: DayRecord[] = [],
+  settings?: AlertSettings,
+): ReviewAlert[] {
+  const alerts: ReviewAlert[] = [];
+  const nowIso = new Date().toISOString();
+
+  const enabled = settings?.enabledAlerts ?? {
+    workstreamImbalance: true,
+    chronicBottleneck: true,
+    realismDrift: true,
+    dataGap: true,
+  };
+
+  const chronicThreshold = settings?.chronicBottleneckThreshold ?? 2;
+  const driftMin = settings?.realismDriftMin ?? 0.7;
+  const driftMax = settings?.realismDriftMax ?? 1.35;
+  const gapThreshold = settings?.dataGapDaysThreshold ?? 2;
+
+  // 1. Priority 2 Workstream Imbalance Check
+  if (enabled.workstreamImbalance && summary.p2HoursWorkstreamA >= 2.5 && summary.p2HoursWorkstreamB === 0) {
+    alerts.push({
+      id: `alt-p2-imbalance-${summary.id}`,
+      title: "P2 Workstream Imbalance",
+      message: `Priority 2 logged ${summary.p2HoursWorkstreamA}h in Workstream A (Cashflow/Trading) but 0h in Workstream B (Fintech Product Capability).`,
+      severity: "warning",
+      category: "workstream_imbalance",
+      periodRef: summary.id,
+      timestamp: nowIso,
+    });
+  }
+
+  // 2. Chronic Bottleneck Detection
+  if (enabled.chronicBottleneck) {
+    const chronic = summary.repeatedUnfinishedTasks.find((t) => t.count >= chronicThreshold);
+    if (chronic) {
+      alerts.push({
+        id: `alt-chronic-${summary.id}`,
+        title: "Chronic Execution Bottleneck",
+        message: `"${chronic.title}" remained unfinished across ${chronic.count} separate review days in this period.`,
+        severity: "critical",
+        category: "chronic_bottleneck",
+        periodRef: summary.id,
+        timestamp: nowIso,
+      });
+    }
+  }
+
+  // 3. Planning Realism Drift
+  if (enabled.realismDrift && summary.totalPlannedHours > 0) {
+    const ratio = summary.totalActualHours / summary.totalPlannedHours;
+    if (ratio < driftMin && summary.totalPlannedHours >= 5) {
+      alerts.push({
+        id: `alt-drift-under-${summary.id}`,
+        title: "Planning Over-Commitment",
+        message: `Actual hours (${summary.totalActualHours}h) fell below ${Math.round(driftMin * 100)}% of planned allocation (${summary.totalPlannedHours}h). Scoping calibration recommended.`,
+        severity: "warning",
+        category: "realism_drift",
+        periodRef: summary.id,
+        timestamp: nowIso,
+      });
+    } else if (ratio > driftMax) {
+      alerts.push({
+        id: `alt-drift-over-${summary.id}`,
+        title: "Extended Execution Spillover",
+        message: `Actual hours (${summary.totalActualHours}h) exceeded planned capacity by ${Math.round((ratio - 1) * 100)}%. Protect recovery margins.`,
+        severity: "info",
+        category: "realism_drift",
+        periodRef: summary.id,
+        timestamp: nowIso,
+      });
+    }
+  }
+
+  // 4. Missing Data Gaps
+  if (enabled.dataGap && (summary.missingDaysCount ?? 0) >= gapThreshold && summary.type === "weekly") {
+    alerts.push({
+      id: `alt-gap-${summary.id}`,
+      title: "Data Continuity Gap",
+      message: `${summary.missingDaysCount} of 7 days had no recorded execution in this weekly period.`,
+      severity: "info",
+      category: "data_gap",
+      periodRef: summary.id,
+      timestamp: nowIso,
+    });
+  }
+
+  return alerts;
+}
+
+/**
+ * Evaluates a user-defined custom metric formula against aggregated period metrics.
+ */
+export function evaluateCustomMetric(
+  metric: CustomMetricDefinition,
+  summary: ReviewPeriodSummary,
+): { value: number; formatted: string; targetMet: boolean } {
+  // 1. Numerator resolution
+  let numVal = 0;
+  if (metric.numerator === "actualHours") {
+    numVal = metric.priorityFilter ? summary.hoursByPriority[metric.priorityFilter] ?? 0 : summary.totalActualHours;
+  } else if (metric.numerator === "tasksDone") {
+    numVal = summary.tasksDoneTotal;
+  } else if (metric.numerator === "outcomesAchieved") {
+    numVal = summary.outcomesAchievedTotal;
+  } else if (metric.numerator === "p2HoursA") {
+    numVal = summary.p2HoursWorkstreamA;
+  } else if (metric.numerator === "p2HoursB") {
+    numVal = summary.p2HoursWorkstreamB;
+  }
+
+  // 2. Denominator resolution
+  let denVal = 1;
+  if (metric.denominator === "plannedHours") {
+    denVal = metric.priorityFilter ? summary.plannedHoursByPriority[metric.priorityFilter] ?? 1 : summary.totalPlannedHours;
+  } else if (metric.denominator === "tasksPlanned") {
+    denVal = summary.tasksPlannedTotal;
+  } else if (metric.denominator === "totalActualHours") {
+    denVal = summary.totalActualHours;
+  } else if (metric.denominator === "recordedDays") {
+    denVal = summary.daysIncluded.length;
+  }
+
+  if (denVal <= 0) denVal = 1;
+
+  // 3. Mathematical calculation
+  let raw = 0;
+  if (metric.formula === "ratio" || metric.formula === "rate") {
+    raw = metric.unit === "%" ? Math.round((numVal / denVal) * 100) : Math.round((numVal / denVal) * 100) / 100;
+  } else if (metric.formula === "yield_per_hour") {
+    raw = Math.round((numVal / Math.max(0.1, denVal)) * 10) / 10;
+  } else {
+    raw = Math.round((numVal / denVal) * 10) / 10;
+  }
+
+  const formatted = metric.unit === "%" ? `${raw}%` : metric.unit === "h" ? `${raw}h` : `${raw}`;
+  const targetMet = raw >= metric.targetValue;
+
+  return { value: raw, formatted, targetMet };
+}
+
+/**
+ * Generates evidence-grounded AI Analyst items (Facts, Insights, Recommendations)
+ * without any hallucinations or unbacked metrics.
+ */
+export function generateDeterministicInsights(
+  summary: ReviewPeriodSummary,
+  records: DayRecord[] = [],
+): ReviewAIInsight[] {
+  const insights: ReviewAIInsight[] = [];
+  const nowIso = new Date().toISOString();
+  const dayCount = summary.daysIncluded.length;
+  const isInsufficient = dayCount < 2;
+
+  // 1. Empirical Fact: Effort Distribution
+  const priHours = summary.hoursByPriority;
+  const maxPri = (Object.keys(priHours) as unknown as PriorityId[]).reduce((a, b) =>
+    priHours[a] > priHours[b] ? a : b,
+  );
+  const priPct =
+    summary.totalActualHours > 0
+      ? Math.round((priHours[maxPri] / summary.totalActualHours) * 100)
+      : 0;
+
+  insights.push({
+    id: `ins-fact-dist-${summary.id}`,
+    type: "fact",
+    title: `Effort Distribution across ${dayCount} Active Day(s)`,
+    body: `Recorded a total of ${summary.totalActualHours} hours across ${dayCount} days. Priority #${maxPri} received the highest allocation (${priHours[maxPri]}h, ${priPct}% of total actual time).`,
+    priorityId: maxPri,
+    evidence: {
+      sourcePeriod: summary.id,
+      dataPoints: [
+        `Total actual: ${summary.totalActualHours}h`,
+        `Priority #${maxPri}: ${priHours[maxPri]}h (${priPct}%)`,
+        `Active days: ${summary.daysIncluded.join(", ")}`,
+      ],
+      confidence: isInsufficient ? "Low" : "High",
+      insufficientEvidence: isInsufficient,
+    },
+    status: "active",
+    createdAt: nowIso,
+  });
+
+  // 2. Empirical Fact: Activity vs Outcome Disconnect Check
+  insights.push({
+    id: `ins-fact-outcomes-${summary.id}`,
+    type: "fact",
+    title: "Activity vs. Outcome Fulfillment",
+    body: `Task completion rate reached ${summary.taskCompletionRate}% (${summary.tasksDoneTotal}/${summary.tasksPlannedTotal} tasks). Daily outcome delivery rate was ${summary.outcomesRate}% (${summary.outcomesAchievedTotal}/${summary.outcomesPlannedTotal} key outcomes verified).`,
+    evidence: {
+      sourcePeriod: summary.id,
+      dataPoints: [
+        `Task completion: ${summary.taskCompletionRate}%`,
+        `Outcome success rate: ${summary.outcomesRate}%`,
+        `Outcomes achieved: ${summary.outcomesAchievedTotal}`,
+      ],
+      confidence: isInsufficient ? "Low" : "High",
+      insufficientEvidence: isInsufficient,
+    },
+    status: "active",
+    createdAt: nowIso,
+  });
+
+  // 3. Analytical Insight: Realism & Priority 2 Workstreams
+  const realismRatio =
+    summary.totalPlannedHours > 0
+      ? Math.round((summary.totalActualHours / summary.totalPlannedHours) * 100) / 100
+      : 1;
+
+  let realismNote = "Planning capacity was calibrated with reality.";
+  if (realismRatio < 0.85) realismNote = "Execution lagged planned allocation, suggesting over-optimistic task scoping.";
+  else if (realismRatio > 1.15) realismNote = "Actual work took noticeably longer than planned, showing scope expansion.";
+
+  insights.push({
+    id: `ins-analytic-p2-${summary.id}`,
+    type: "insight",
+    title: "Execution Realism and Workstream Allocation",
+    body: `${realismNote} In Priority 2, Workstream A (Cashflow/Trading) comprised ${summary.p2HoursWorkstreamA}h while Workstream B (Fintech Product) comprised ${summary.p2HoursWorkstreamB}h.`,
+    priorityId: 2,
+    evidence: {
+      sourcePeriod: summary.id,
+      dataPoints: [
+        `Realism ratio: ${realismRatio}`,
+        `P2 Workstream A: ${summary.p2HoursWorkstreamA}h`,
+        `P2 Workstream B: ${summary.p2HoursWorkstreamB}h`,
+      ],
+      confidence: isInsufficient ? "Low" : "High",
+      insufficientEvidence: isInsufficient,
+    },
+    status: "active",
+    createdAt: nowIso,
+  });
+
+  // 4. Actionable Recommendation
+  if (summary.repeatedUnfinishedTasks.length > 0) {
+    const topStall = summary.repeatedUnfinishedTasks[0]!;
+    insights.push({
+      id: `ins-rec-stall-${summary.id}`,
+      type: "recommendation",
+      title: `Scope Mitigation for Recurring Friction: "${topStall.title}"`,
+      body: `Break "${topStall.title}" into sub-45 minute verifiable micro-tasks or re-examine external dependencies that cause repeated postponement.`,
+      priorityId: topStall.priorityId,
+      recommendedAction: `Create a scoped improvement action in the Improvement Intelligence tab to eliminate friction on "${topStall.title}".`,
+      evidence: {
+        sourcePeriod: summary.id,
+        dataPoints: [
+          `Task "${topStall.title}" postponed ${topStall.count} time(s)`,
+          `Priority #${topStall.priorityId}`,
+        ],
+        confidence: isInsufficient ? "Low" : "High",
+        insufficientEvidence: isInsufficient,
+      },
+      status: "active",
+      createdAt: nowIso,
+    });
+  }
+
+  return insights;
+}
+
+/**
+ * Calculates project-level performance across review records.
+ * Aggregates task completion, hours, deliverables, and active dates.
+ */
+export function calculateProjectPerformance(
+  projectId: string,
+  records: DayRecord[] = [],
+): ProjectPerformanceSummary {
+  let totalPlannedMin = 0;
+  let totalActualMin = 0;
+  let tasksPlannedTotal = 0;
+  let tasksDoneTotal = 0;
+  const outputs: ProjectPerformanceSummary["outputs"] = [];
+  const activeDaysSet = new Set<string>();
+
+  records.forEach((day) => {
+    let dayHasProject = false;
+
+    // 1. Task Execution Snapshots
+    if (day.taskSnapshots && day.taskSnapshots.length > 0) {
+      const projSnapshots = day.taskSnapshots.filter((t) => t.projectId === projectId);
+      if (projSnapshots.length > 0) {
+        dayHasProject = true;
+        projSnapshots.forEach((t) => {
+          totalPlannedMin += t.durationPlannedMin;
+          totalActualMin += t.durationActualMin;
+          tasksPlannedTotal += 1;
+          if (t.status === "done") tasksDoneTotal += 1;
+        });
+      }
+    }
+
+    // 2. Day Outputs
+    let outputPriId: PriorityId | undefined;
+    (day.outputs ?? []).forEach((out) => {
+      if (out.projectId === projectId) {
+        dayHasProject = true;
+        outputPriId = out.priorityId;
+        outputs.push({
+          date: day.date,
+          title: out.title,
+          text: out.text,
+          workstream: out.workstream,
+        });
+      }
+    });
+
+    // Fallback: If no granular task snapshots are logged for this day, but outputs link to this project
+    if ((!day.taskSnapshots || day.taskSnapshots.length === 0) && outputPriId !== undefined) {
+      totalActualMin += day.actualMin[outputPriId] ?? 0;
+      totalPlannedMin += day.plannedMin[outputPriId] ?? 0;
+      tasksPlannedTotal += day.tasksPlanned;
+      tasksDoneTotal += day.tasksDone;
+    }
+
+    if (dayHasProject) {
+      activeDaysSet.add(day.date);
+    }
+  });
+
+  const sortedDates = Array.from(activeDaysSet).sort();
+  const taskCompletionRate =
+    tasksPlannedTotal > 0
+      ? Math.min(100, Math.round((tasksDoneTotal / tasksPlannedTotal) * 100))
+      : 0;
+
+  return {
+    projectId,
+    totalPlannedHours: Math.round((totalPlannedMin / 60) * 10) / 10,
+    totalActualHours: Math.round((totalActualMin / 60) * 10) / 10,
+    tasksPlannedTotal,
+    tasksDoneTotal,
+    taskCompletionRate,
+    outputsCount: outputs.length,
+    outputs,
+    activeDaysCount: activeDaysSet.size,
+    firstActiveDate: sortedDates[0],
+    lastActiveDate: sortedDates[sortedDates.length - 1],
+  };
+}
+
 

@@ -154,6 +154,9 @@ export const initialState: OSState = {
   history: [],
   bottlenecks: [],
   improvements: [],
+  periodReviews: [],
+  aiInsights: [],
+  reviewAlerts: [],
   reviewSettings: {
     defaultPeriod: "daily",
     weekStartDay: 1,

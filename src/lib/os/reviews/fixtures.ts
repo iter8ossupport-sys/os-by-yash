@@ -12,6 +12,48 @@ export const defaultReviewSettings: ReviewSettings = {
   minDataThresholdDays: 3,
   exportDateFormat: "YYYY-MM-DD",
   customViews: [],
+  customMetrics: [
+    {
+      id: "metric-yield-density",
+      name: "Outcome Yield Density",
+      description: "Tangible outcomes achieved per 10 hours of execution",
+      formula: "yield_per_hour",
+      numerator: "outcomesAchieved",
+      denominator: "totalActualHours",
+      unit: "ratio",
+      targetValue: 0.5,
+    },
+  ],
+  alertSettings: {
+    workstreamImbalanceThreshold: 80,
+    chronicBottleneckThreshold: 2,
+    realismDriftMin: 0.7,
+    realismDriftMax: 1.3,
+    dataGapDaysThreshold: 2,
+    enabledAlerts: {
+      workstreamImbalance: true,
+      chronicBottleneck: true,
+      realismDrift: true,
+      dataGap: true,
+    },
+  },
+  reflectionTemplates: {
+    daily: [
+      "What concrete output or breakthrough was delivered today?",
+      "Where did execution stall, drift, or face unplanned resistance?",
+      "What operational adjustment will improve tomorrow's plan?",
+    ],
+    weekly: [
+      "Did this week's hours match your high-leverage strategic intent?",
+      "Which bottlenecks recurred more than once?",
+      "What low-impact activity will you ruthlessly drop next week?",
+    ],
+    monthly: [
+      "Are you demonstrably closer to your Level A/B milestones?",
+      "How is the balance between P2 Cashflow (A) and Fintech Equity (B)?",
+      "What foundational system or capability must be built next month?",
+    ],
+  },
 };
 
 /**

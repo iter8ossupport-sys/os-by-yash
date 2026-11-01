@@ -1,8 +1,18 @@
 import type {
+  AlertSettings,
   AuditRecord,
+  CustomMetricDefinition,
+  CustomReviewView,
   DayRecord,
+  ForecastSnapshot,
   ImprovementStatus,
+  KnowledgeItem,
   OSState,
+  PeriodReviewRecord,
+  ReflectionTemplate,
+  ReportShareConfig,
+  ReviewAIInsight,
+  ReviewAlert,
   ReviewBottleneck,
   ReviewImprovement,
   ReviewSettings,
@@ -109,14 +119,19 @@ export function addOrUpdateBottleneck(
   let updated: ReviewBottleneck[];
   if (existingIndex >= 0) {
     const existing = current[existingIndex];
-    const merged: ReviewBottleneck = {
-      ...existing,
-      ...bottleneck,
-      occurrenceCount: existing.occurrenceCount + 1,
-      lastObservedDate: bottleneck.lastObservedDate,
-      sourceDayDates: Array.from(new Set([...existing.sourceDayDates, ...bottleneck.sourceDayDates])),
-    };
-    updated = current.map((b, idx) => (idx === existingIndex ? merged : b));
+    if (existing) {
+      const merged: ReviewBottleneck = {
+        ...existing,
+        ...bottleneck,
+        id: existing.id,
+        occurrenceCount: existing.occurrenceCount + 1,
+        lastObservedDate: bottleneck.lastObservedDate,
+        sourceDayDates: Array.from(new Set([...existing.sourceDayDates, ...bottleneck.sourceDayDates])),
+      };
+      updated = current.map((b, idx) => (idx === existingIndex ? merged : b));
+    } else {
+      updated = current;
+    }
   } else {
     const newEntry: ReviewBottleneck = {
       ...bottleneck,
@@ -158,7 +173,7 @@ export function updateReviewSettings(
   s: OSState,
   patch: Partial<ReviewSettings>,
 ): OSState {
-  const current = s.reviewSettings ?? {
+  const current: ReviewSettings = s.reviewSettings ?? {
     defaultPeriod: "daily",
     weekStartDay: 1,
     trackP2WorkstreamSplits: true,
@@ -168,5 +183,334 @@ export function updateReviewSettings(
   };
 
   return { ...s, reviewSettings: { ...current, ...patch } };
+}
+
+/**
+ * Finalizes an immutable period review (Weekly or Monthly snapshot) in history.
+ */
+export function finalizePeriodReview(
+  s: OSState,
+  review: PeriodReviewRecord,
+): OSState {
+  const current = s.periodReviews ?? [];
+  const exists = current.some((r) => r.id === review.id);
+  const updated = exists
+    ? current.map((r) => (r.id === review.id ? review : r))
+    : [review, ...current];
+
+  return { ...s, periodReviews: updated };
+}
+
+/**
+ * Deletes a finalized period review snapshot.
+ */
+export function deletePeriodReview(s: OSState, id: string): OSState {
+  const current = s.periodReviews ?? [];
+  return { ...s, periodReviews: current.filter((r) => r.id !== id) };
+}
+
+/**
+ * Records an evidence-based AI insight (Fact, Insight, or Recommendation).
+ */
+export function addAIInsight(
+  s: OSState,
+  insight: Omit<ReviewAIInsight, "id" | "createdAt">,
+  nowIso = new Date().toISOString(),
+): OSState {
+  const newInsight: ReviewAIInsight = {
+    ...insight,
+    id: `ins-${uid()}`,
+    createdAt: nowIso,
+  };
+  const current = s.aiInsights ?? [];
+  return { ...s, aiInsights: [newInsight, ...current] };
+}
+
+/**
+ * Updates an AI insight (e.g. status transition to dismissed or converted).
+ */
+export function updateAIInsight(
+  s: OSState,
+  id: string,
+  patch: Partial<ReviewAIInsight>,
+): OSState {
+  const current = s.aiInsights ?? [];
+  return {
+    ...s,
+    aiInsights: current.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+  };
+}
+
+/**
+ * Adds a smart operational review alert.
+ */
+export function addAlert(
+  s: OSState,
+  alert: Omit<ReviewAlert, "id" | "timestamp">,
+  nowIso = new Date().toISOString(),
+): OSState {
+  const newAlert: ReviewAlert = {
+    ...alert,
+    id: `alt-${uid()}`,
+    timestamp: nowIso,
+  };
+  const current = s.reviewAlerts ?? [];
+  return { ...s, reviewAlerts: [newAlert, ...current] };
+}
+
+/**
+ * Dismisses a review alert.
+ */
+export function dismissAlert(s: OSState, id: string): OSState {
+  const current = s.reviewAlerts ?? [];
+  return {
+    ...s,
+    reviewAlerts: current.map((a) => (a.id === id ? { ...a, dismissed: true } : a)),
+  };
+}
+
+/**
+ * Promotes an evaluated improvement into an active Knowledge item.
+ */
+export function promoteImprovementToKnowledge(
+  s: OSState,
+  improvementId: string,
+  nowIso = today(),
+): OSState {
+  const imp = (s.improvements ?? []).find((i) => i.id === improvementId);
+  if (!imp) return s;
+
+  const knowledgeItem: KnowledgeItem = {
+    id: `k-imp-${uid()}`,
+    title: `Lesson: ${imp.problemStatement.slice(0, 60)}`,
+    type: "Learning",
+    body: `Problem: ${imp.problemStatement}\n\nEvidence: ${imp.evidence.metrics.join("; ")}\n\nApproved Action: ${imp.approvedAction || imp.recommendation}\n\nEvaluation Result (${imp.evaluationOutcome || "completed"}): ${imp.evaluationNotes || "Validated through execution."}`,
+    priorityId: imp.priorityId,
+    projectId: imp.projectId,
+    tags: `improvement, review, ${imp.periodRef}`,
+    createdAt: nowIso,
+  };
+
+  const updatedImprovements = (s.improvements ?? []).map((i) =>
+    i.id === improvementId ? { ...i, promotedToKnowledgeId: knowledgeItem.id } : i,
+  );
+
+  return {
+    ...s,
+    knowledge: [knowledgeItem, ...s.knowledge],
+    improvements: updatedImprovements,
+  };
+}
+
+/**
+ * Adds or updates a saved custom analytical view.
+ */
+export function saveCustomView(s: OSState, view: CustomReviewView): OSState {
+  const settings = s.reviewSettings ?? {
+    defaultPeriod: "daily",
+    weekStartDay: 1,
+    trackP2WorkstreamSplits: true,
+    minDataThresholdDays: 3,
+    exportDateFormat: "YYYY-MM-DD",
+    customViews: [],
+  };
+
+  const currentViews = settings.customViews ?? [];
+  const exists = currentViews.some((v) => v.id === view.id);
+  const updatedViews = exists
+    ? currentViews.map((v) => (v.id === view.id ? view : v))
+    : [...currentViews, view];
+
+  return {
+    ...s,
+    reviewSettings: { ...settings, customViews: updatedViews },
+  };
+}
+
+/**
+ * Deletes a saved custom analytical view.
+ */
+export function deleteCustomView(s: OSState, id: string): OSState {
+  if (!s.reviewSettings) return s;
+  return {
+    ...s,
+    reviewSettings: {
+      ...s.reviewSettings,
+      customViews: s.reviewSettings.customViews.filter((v) => v.id !== id),
+    },
+  };
+}
+
+/**
+ * Adds or updates a user-defined custom metric formula.
+ */
+export function addCustomMetric(s: OSState, metric: CustomMetricDefinition): OSState {
+  const settings = s.reviewSettings ?? {
+    defaultPeriod: "daily",
+    weekStartDay: 1,
+    trackP2WorkstreamSplits: true,
+    minDataThresholdDays: 3,
+    exportDateFormat: "YYYY-MM-DD",
+    customViews: [],
+  };
+
+  const currentMetrics = settings.customMetrics ?? [];
+  const exists = currentMetrics.some((m) => m.id === metric.id);
+  const updatedMetrics = exists
+    ? currentMetrics.map((m) => (m.id === metric.id ? metric : m))
+    : [...currentMetrics, metric];
+
+  return {
+    ...s,
+    reviewSettings: {
+      ...settings,
+      customMetrics: updatedMetrics,
+    },
+  };
+}
+
+/**
+ * Deletes a user-defined custom metric.
+ */
+export function deleteCustomMetric(s: OSState, id: string): OSState {
+  if (!s.reviewSettings) return s;
+  return {
+    ...s,
+    reviewSettings: {
+      ...s.reviewSettings,
+      customMetrics: (s.reviewSettings.customMetrics ?? []).filter((m) => m.id !== id),
+    },
+  };
+}
+
+/**
+ * Updates configurable alert sensitivity thresholds.
+ */
+export function updateAlertSettings(s: OSState, alertSettings: AlertSettings): OSState {
+  const settings = s.reviewSettings ?? {
+    defaultPeriod: "daily",
+    weekStartDay: 1,
+    trackP2WorkstreamSplits: true,
+    minDataThresholdDays: 3,
+    exportDateFormat: "YYYY-MM-DD",
+    customViews: [],
+  };
+
+  return {
+    ...s,
+    reviewSettings: {
+      ...settings,
+      alertSettings,
+    },
+  };
+}
+
+/**
+ * Updates customizable reflection questions.
+ */
+export function updateReflectionTemplates(s: OSState, reflectionTemplates: ReflectionTemplate): OSState {
+  const settings = s.reviewSettings ?? {
+    defaultPeriod: "daily",
+    weekStartDay: 1,
+    trackP2WorkstreamSplits: true,
+    minDataThresholdDays: 3,
+    exportDateFormat: "YYYY-MM-DD",
+    customViews: [],
+  };
+
+  return {
+    ...s,
+    reviewSettings: {
+      ...settings,
+      reflectionTemplates,
+    },
+  };
+}
+
+/**
+ * Archives a milestone forecast snapshot for accuracy and calibration tracking.
+ */
+export function addForecastSnapshot(
+  s: OSState,
+  snapshot: Omit<ForecastSnapshot, "id" | "createdAt">,
+): OSState {
+  const current = s.forecastHistory ?? [];
+  const newSnapshot: ForecastSnapshot = {
+    ...snapshot,
+    id: `fc-${uid()}`,
+    createdAt: new Date().toISOString(),
+  };
+
+  return {
+    ...s,
+    forecastHistory: [newSnapshot, ...current],
+  };
+}
+
+/**
+ * Marks a forecast milestone as delivered and computes variance days and calibration rating.
+ */
+export function markForecastDelivered(
+  s: OSState,
+  id: string,
+  actualDate: string,
+): OSState {
+  const current = s.forecastHistory ?? [];
+  const updated = current.map((f) => {
+    if (f.id !== id) return f;
+    const predTime = new Date(f.predictedDate).getTime();
+    const actTime = new Date(actualDate).getTime();
+    const diffDays = Math.round((actTime - predTime) / 864e5);
+
+    let rating: ForecastSnapshot["calibrationRating"] = "accurate";
+    if (diffDays > 5) rating = "optimistic_bias"; // took longer than predicted
+    else if (diffDays < -5) rating = "conservative_bias"; // delivered faster
+
+    return {
+      ...f,
+      actualDeliveredDate: actualDate,
+      status: "delivered" as const,
+      accuracyVarianceDays: diffDays,
+      calibrationRating: rating,
+    };
+  });
+
+  return {
+    ...s,
+    forecastHistory: updated,
+  };
+}
+
+/**
+ * Creates a report-sharing configuration with specific permission levels.
+ */
+export function createReportShare(
+  s: OSState,
+  config: Omit<ReportShareConfig, "id" | "shareToken" | "createdAt">,
+): { state: OSState; share: ReportShareConfig } {
+  const current = s.sharedReports ?? [];
+  const shareToken = `sec_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`;
+  const newShare: ReportShareConfig = {
+    ...config,
+    id: `shr-${uid()}`,
+    shareToken,
+    createdAt: new Date().toISOString(),
+  };
+
+  return {
+    state: { ...s, sharedReports: [newShare, ...current] },
+    share: newShare,
+  };
+}
+
+/**
+ * Revokes a shared report.
+ */
+export function deleteReportShare(s: OSState, id: string): OSState {
+  const current = s.sharedReports ?? [];
+  return {
+    ...s,
+    sharedReports: current.filter((r) => r.id !== id),
+  };
 }
 

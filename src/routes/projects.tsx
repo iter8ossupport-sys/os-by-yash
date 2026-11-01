@@ -469,7 +469,7 @@ function ProjectDetailsModal({
     setCustomCatInput("");
   };
 
-  const priorityMeta = PRIORITIES_META.find((m) => m.id === draft.priorityId) ?? PRIORITIES_META[0];
+  const priorityMeta = PRIORITIES_META.find((m) => m.id === draft.priorityId) ?? PRIORITIES_META[0]!;
 
   return (
     <Modal open onClose={onClose} title={draft.name || "Project Details"} wide>

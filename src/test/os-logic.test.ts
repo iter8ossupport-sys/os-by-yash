@@ -14,16 +14,16 @@ describe("execution rules", () => {
 
   it("pause/resume accumulates time", () => {
     let s = approved();
-    const id = s.plan!.tasks[0].id;
+    const id = s.plan!.tasks[0]!.id;
     s = startTask(s, id, 0);
     s = pauseTask(s, id, 60000);
     s = startTask(s, id, 100000);
-    expect(elapsed(s.plan!.tasks[0], 130000)).toBe(90000);
+    expect(elapsed(s.plan!.tasks[0]!, 130000)).toBe(90000);
   });
 
   it("emergency switch preserves interrupted task time", () => {
     let s = approved();
-    const id = s.plan!.tasks[0].id;
+    const id = s.plan!.tasks[0]!.id;
     s = startTask(s, id, 0);
     s = emergencyPause(s, 30000);
     expect(s.interruptedTaskId).toBe(id);
@@ -32,15 +32,15 @@ describe("execution rules", () => {
 
   it("finishing records output separately from outcome", () => {
     let s = approved();
-    const id = s.plan!.tasks[0].id;
+    const id = s.plan!.tasks[0]!.id;
     s = finishTask(s, id, { Note: "done" }, false);
     expect(s.plan!.tasks[0]).toMatchObject({ status: "done", outcomeAchieved: false, output: { Note: "done" } });
   });
 
   it("preserves single-active-task invariant when starting another task", () => {
     let s = approved();
-    const task1Id = s.plan!.tasks[0].id;
-    const task2Id = s.plan!.tasks[1].id;
+    const task1Id = s.plan!.tasks[0]!.id;
+    const task2Id = s.plan!.tasks[1]!.id;
     // Start task 1
     s = startTask(s, task1Id, 1000);
     expect(s.activeTaskId).toBe(task1Id);

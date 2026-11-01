@@ -1,116 +1,248 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { useOS, fmtMin } from "@/lib/os/store";
-import { buildDayRecord } from "@/lib/os/logic";
-import type { DayRecord, PriorityId } from "@/lib/os/types";
-import { Empty, Glass, PageHeader, Segmented } from "@/components/os/ui";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import {
+  Activity,
+  AlertTriangle,
+  ArrowRight,
+  BarChart3,
+  Calendar,
+  Compass,
+  FileCheck,
+  History,
+  Lightbulb,
+  Moon,
+  Plus,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  TrendingUp,
+  Zap,
+} from "lucide-react";
+import { useOS } from "@/lib/os/store";
+import { PageHeader, Segmented, Button, Badge } from "@/components/os/ui";
+import { ReviewOverview } from "@/components/os/reviews/ReviewOverview";
+import { AnalyticsHubView, type AnalyticalSubView } from "@/components/os/reviews/AnalyticsHubView";
+import { DailyReviewView } from "@/components/os/reviews/DailyReviewView";
+import { WeeklyReviewView } from "@/components/os/reviews/WeeklyReviewView";
+import { MonthlyReviewView } from "@/components/os/reviews/MonthlyReviewView";
+import { HistoryReviewView } from "@/components/os/reviews/HistoryReviewView";
+import { BottlenecksView } from "@/components/os/reviews/BottlenecksView";
+import { ImprovementsView } from "@/components/os/reviews/ImprovementsView";
+import { AIAnalystView } from "@/components/os/reviews/AIAnalystView";
+import { ForecastView } from "@/components/os/reviews/ForecastView";
+import { ReviewSettingsModal } from "@/components/os/reviews/ReviewSettingsModal";
+import { ReportShareModal } from "@/components/os/reviews/ReportShareModal";
+import { Share2 } from "lucide-react";
+
+type SearchParams = {
+  tab?: string | undefined;
+  date?: string | undefined;
+  view?: string | undefined;
+};
 
 export const Route = createFileRoute("/reviews")({
+  validateSearch: (s: Record<string, unknown>): SearchParams => ({
+    tab: typeof s["tab"] === "string" ? (s["tab"] as string) : undefined,
+    date: typeof s["date"] === "string" ? (s["date"] as string) : undefined,
+    view: typeof s["view"] === "string" ? (s["view"] as string) : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Reviews — Yash OS" },
-      { name: "description", content: "Daily, weekly and monthly reviews built from your recorded execution." },
+      {
+        name: "description",
+        content:
+          "Evidence-based performance & improvement intelligence built from verified planning and execution records.",
+      },
       { property: "og:title", content: "Reviews — Yash OS" },
-      { property: "og:description", content: "Turn data into growth." },
+      { property: "og:description", content: "PRE-THINK → ACT → POST-THINK → IMPROVE." },
     ],
   }),
   component: ReviewsPage,
 });
 
-const TABS = ["Daily", "Weekly", "Monthly", "History"] as const;
-const IDS: PriorityId[] = [1, 2, 3];
+const TABS = [
+  "Overview",
+  "Analytics",
+  "Daily",
+  "Weekly",
+  "Monthly",
+  "History",
+  "Bottlenecks",
+  "Improvements",
+  "AI Analyst",
+  "Forecast",
+] as const;
 
-function sum(recs: DayRecord[]) {
-  const z = { 1: 0, 2: 0, 3: 0 } as Record<PriorityId, number>;
-  const planned = { ...z }, actual = { ...z };
-  recs.forEach((r) => IDS.forEach((i) => { planned[i] += r.plannedMin[i]; actual[i] += r.actualMin[i]; }));
-  return { planned, actual };
-}
+type TabType = (typeof TABS)[number];
 
 function ReviewsPage() {
   const { state } = useOS();
-  const [tab, setTab] = useState<(typeof TABS)[number]>("Daily");
-  const live = state.plan ? buildDayRecord(state.plan, "") : null;
-  const all = useMemo(() => [...state.history].sort((a, b) => b.date.localeCompare(a.date)), [state.history]);
-  const days = tab === "Weekly" ? 7 : tab === "Monthly" ? 30 : 1;
-  const cutoff = new Date(Date.now() - days * 864e5).toISOString().slice(0, 10);
-  const recs = tab === "Daily" ? (live ? [live] : all.slice(0, 1)) : all.filter((r) => r.date >= cutoff);
-  const s = sum(recs);
-  const chart = state.priorities.map((p) => ({ name: `#${p.id} ${p.name.split(" ")[0]}`, Planned: s.planned[p.id], Actual: s.actual[p.id] }));
+  const search = Route.useSearch();
+  const nav = useNavigate();
+
+  // Selected tab
+  const [tab, setTab] = useState<TabType>(() => {
+    if (search.tab && TABS.includes(search.tab as TabType)) {
+      return search.tab as TabType;
+    }
+    const def = state.reviewSettings?.defaultPeriod;
+    if (def === "weekly") return "Weekly";
+    if (def === "monthly") return "Monthly";
+    if (def === "history") return "History";
+    return "Overview";
+  });
+
+  // Track target date when navigating between views
+  const [targetedDate, setTargetedDate] = useState<string | undefined>(search.date);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+
+  // Sync tab changes with URL search params
+  const handleTabChange = (nextTab: TabType) => {
+    setTab(nextTab);
+    const searchParams: SearchParams = { tab: nextTab, date: targetedDate };
+    nav({
+      to: "/reviews",
+      search: searchParams,
+      replace: true,
+    });
+  };
+
+  const handleSelectDateFromHistory = (date: string) => {
+    setTargetedDate(date);
+    setTab("Daily");
+    const searchParams: SearchParams = { tab: "Daily", date };
+    nav({
+      to: "/reviews",
+      search: searchParams,
+      replace: true,
+    });
+  };
 
   return (
-    <div>
-      <PageHeader eyebrow="Post-think · Improve" title="Review — Turn Data into Growth" subtitle="Everything here comes from what you actually planned and recorded." />
-      <Segmented value={tab} options={TABS} onChange={setTab} className="mb-6 max-w-lg" />
-
-      {tab === "History" ? (
-        all.length === 0 ? <Empty title="No closed days yet">Run Daily Closeout in Execute to create your first review.</Empty> : (
-          <div className="space-y-3">
-            {all.map((r) => (
-              <Glass key={r.date} className="p-4">
-                <div className="flex flex-wrap justify-between gap-2"><b>{r.date}</b><span className="text-sm text-muted-foreground">{r.tasksDone}/{r.tasksPlanned} tasks · outcomes achieved: {r.outcomesAchieved.length}/3</span></div>
-                {r.learning && <p className="mt-2 text-sm text-muted-foreground">Learning: {r.learning}</p>}
-              </Glass>
-            ))}
+    <div className="space-y-6">
+      {/* Page Header with System Actions */}
+      <PageHeader
+        eyebrow="Post-Think · Analyze · Improve"
+        title="Reviews & Improvement Intelligence"
+        subtitle="Empirical performance intelligence, bottleneck resolution, and milestone forecasting from actual records."
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              variant="glass"
+              size="sm"
+              onClick={() => setShareOpen(true)}
+              className="text-xs"
+            >
+              <Share2 className="h-3.5 w-3.5 mr-1 text-primary" />
+              Share / Export
+            </Button>
+            <Button
+              variant="glass"
+              size="sm"
+              onClick={() => nav({ to: "/execute", search: { closeout: 1 } })}
+              className="text-xs"
+            >
+              <Moon className="h-3.5 w-3.5 mr-1 text-cyan" />
+              Daily Closeout
+            </Button>
+            <Button
+              variant="glass"
+              size="icon"
+              onClick={() => setSettingsOpen(true)}
+              aria-label="Reviews Settings"
+            >
+              <Settings className="h-4 w-4 text-muted-foreground" />
+            </Button>
           </div>
-        )
-      ) : recs.length === 0 ? (
-        <Empty title="No data for this period yet">Approve a plan and record outputs — reviews build from real execution only.</Empty>
-      ) : (
-        <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-          <Glass className="p-5">
-            <h2 className="mb-1 font-semibold">Plan vs Actual (minutes)</h2>
-            <p className="mb-4 text-xs text-muted-foreground">{tab === "Daily" ? (live ? "Today (live, not yet closed)" : recs[0].date) : `${recs.length} closed day(s) in the last ${days} days`}</p>
-            <div className="h-64">
-              <ResponsiveContainer>
-                <BarChart data={chart}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} />
-                  <YAxis stroke="var(--muted-foreground)" fontSize={12} />
-                  <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 12 }} />
-                  <Legend />
-                  <Bar dataKey="Planned" fill="var(--primary)" radius={[6, 6, 0, 0]} />
-                  <Bar dataKey="Actual" fill="var(--violet)" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </Glass>
-          <Glass className="space-y-5 p-5">
-            <div className="grid grid-cols-2 gap-3">
-              <Stat l="Tasks done" v={`${recs.reduce((a, r) => a + r.tasksDone, 0)}/${recs.reduce((a, r) => a + r.tasksPlanned, 0)}`} />
-              <Stat l="Actual time" v={fmtMin(IDS.reduce((a, i) => a + s.actual[i], 0))} />
-              <Stat l="Outcomes achieved" v={String(recs.reduce((a, r) => a + r.outcomesAchieved.length, 0))} />
-              <Stat l="Unfinished" v={String(recs.reduce((a, r) => a + r.unfinished.length, 0))} />
-            </div>
-            <div>
-              <h3 className="mb-2 text-sm font-semibold">Key outputs</h3>
-              <ul className="space-y-1.5 text-sm">
-                {recs.flatMap((r) => r.outputs).slice(0, 8).map((o, i) => (
-                  <li key={i} className="flex flex-wrap items-center gap-1.5">
-                    <span className="font-medium">#{o.priorityId} {o.title}:</span>
-                    {o.workstream && <span className="rounded-md border border-cyan/30 bg-cyan/10 px-1.5 py-0.2 text-[10px] font-medium text-cyan">{o.workstream}</span>}
-                    <span className="text-muted-foreground">{o.text}</span>
-                  </li>
-                ))}
-              </ul>
-              {recs.every((r) => !r.outputs.length) && <p className="text-sm text-muted-foreground">No outputs recorded.</p>}
-            </div>
-            {tab !== "Daily" && (
-              <div><h3 className="mb-2 text-sm font-semibold">Repeated unfinished work</h3>
-                <ul className="text-sm text-muted-foreground">{Object.entries(recs.flatMap((r) => r.unfinished).reduce<Record<string, number>>((m, u) => ({ ...m, [u]: (m[u] ?? 0) + 1 }), {})).filter(([, n]) => n > 1).map(([u, n]) => <li key={u}>{u} ×{n}</li>)}</ul>
-              </div>
-            )}
-            {tab === "Monthly" && (
-              <div className="text-sm"><h3 className="mb-2 font-semibold">Milestones</h3>{state.priorities.map((p) => <div key={p.id}>#{p.id} Level C progress: {state.goals.levelC[p.id].progress}% (self-assessed)</div>)}
-                <div>Level A: {state.goals.levelA.approved ? "approved" : "proposed"} · Level B: {state.goals.levelB.approved ? "approved" : "proposed"}</div></div>
-            )}
-            <div><h3 className="mb-2 text-sm font-semibold">Learning</h3><ul className="text-sm text-muted-foreground">{recs.filter((r) => r.learning).map((r) => <li key={r.date}>{r.date}: {r.learning}</li>)}</ul></div>
-          </Glass>
-        </div>
-      )}
+        }
+      />
+
+      {/* Main Tab Navigation */}
+      <div className="overflow-x-auto pb-1">
+        <Segmented
+          value={tab}
+          options={TABS}
+          onChange={handleTabChange}
+          className="min-w-max"
+        />
+      </div>
+
+      {/* Tab Views */}
+      <div className="pt-2 animate-in fade-in duration-300">
+        {tab === "Overview" && (
+          <ReviewOverview
+            onSelectTab={(t, v) => {
+              if (v) {
+                const searchParams: SearchParams = { tab: t, view: v, date: targetedDate };
+                nav({ to: "/reviews", search: searchParams, replace: true });
+                setTab(t as TabType);
+              } else {
+                handleTabChange(t as TabType);
+              }
+            }}
+            onOpenSettings={() => setSettingsOpen(true)}
+          />
+        )}
+
+        {tab === "Analytics" && (
+          <AnalyticsHubView
+            initialSubView={search.view as AnalyticalSubView | undefined}
+            onNavigateToTab={(t, d) => {
+              if (d) setTargetedDate(d);
+              handleTabChange(t as TabType);
+            }}
+          />
+        )}
+
+        {tab === "Daily" && (
+          <DailyReviewView initialDate={targetedDate} />
+        )}
+
+        {tab === "Weekly" && (
+          <WeeklyReviewView
+            initialDate={targetedDate}
+            onNavigateToDay={handleSelectDateFromHistory}
+          />
+        )}
+
+        {tab === "Monthly" && (
+          <MonthlyReviewView initialDate={targetedDate} />
+        )}
+
+        {tab === "History" && (
+          <HistoryReviewView onSelectDate={handleSelectDateFromHistory} />
+        )}
+
+        {tab === "Bottlenecks" && (
+          <BottlenecksView />
+        )}
+
+        {tab === "Improvements" && (
+          <ImprovementsView />
+        )}
+
+        {tab === "AI Analyst" && (
+          <AIAnalystView onGoToImprovements={() => handleTabChange("Improvements")} />
+        )}
+
+        {tab === "Forecast" && (
+          <ForecastView />
+        )}
+      </div>
+
+      {/* Review Settings & Backup Modal */}
+      <ReviewSettingsModal
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+      />
+
+      {/* Report Sharing & Permission Modal */}
+      <ReportShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+      />
     </div>
   );
 }
-
-const Stat = ({ l, v }: { l: string; v: string }) => <div className="rounded-2xl bg-secondary/40 p-3"><div className="font-display text-xl font-semibold">{v}</div><div className="text-xs text-muted-foreground">{l}</div></div>;
