@@ -75,7 +75,8 @@ export interface MarkForecastDeliveredRequest {
 export interface CreateReportShareRequest {
   title: string;
   recipient?: string | undefined;
-  permissionLevel: "summary_only" | "full_with_reflections" | "anonymized_founder";
+  permissionLevel:
+    "summary_only" | "full_with_reflections" | "anonymized_founder";
   includeFinancials: boolean;
   includeAuditHistory: boolean;
   expiresInDays?: number | undefined;
@@ -98,25 +99,42 @@ export interface IReviewsService {
 
   // Bottlenecks
   getBottlenecks(): Promise<ReviewBottleneck[]>;
-  createBottleneck(req: Omit<ReviewBottleneck, "id">): Promise<ReviewBottleneck>;
-  updateBottleneck(id: string, patch: Partial<ReviewBottleneck>): Promise<ReviewBottleneck>;
+  createBottleneck(
+    req: Omit<ReviewBottleneck, "id">,
+  ): Promise<ReviewBottleneck>;
+  updateBottleneck(
+    id: string,
+    patch: Partial<ReviewBottleneck>,
+  ): Promise<ReviewBottleneck>;
   deleteBottleneck(id: string): Promise<boolean>;
 
   // Improvements
   getImprovements(): Promise<ReviewImprovement[]>;
-  createImprovement(req: Omit<ReviewImprovement, "id">): Promise<ReviewImprovement>;
-  updateImprovement(id: string, patch: Partial<ReviewImprovement>): Promise<ReviewImprovement>;
+  createImprovement(
+    req: Omit<ReviewImprovement, "id">,
+  ): Promise<ReviewImprovement>;
+  updateImprovement(
+    id: string,
+    patch: Partial<ReviewImprovement>,
+  ): Promise<ReviewImprovement>;
   deleteImprovement(id: string): Promise<boolean>;
 
   // AI Insights
   getAIInsights(): Promise<ReviewAIInsight[]>;
   dismissAIInsight(id: string): Promise<boolean>;
-  convertAIInsightToImprovement(id: string, improvementTitle: string): Promise<ReviewImprovement>;
+  convertAIInsightToImprovement(
+    id: string,
+    improvementTitle: string,
+  ): Promise<ReviewImprovement>;
 
   // Forecast Calibration
   getForecastHistory(): Promise<ForecastSnapshot[]>;
-  saveForecastSnapshot(req: SaveForecastSnapshotRequest): Promise<ForecastSnapshot>;
-  markForecastDelivered(req: MarkForecastDeliveredRequest): Promise<ForecastSnapshot>;
+  saveForecastSnapshot(
+    req: SaveForecastSnapshotRequest,
+  ): Promise<ForecastSnapshot>;
+  markForecastDelivered(
+    req: MarkForecastDeliveredRequest,
+  ): Promise<ForecastSnapshot>;
 
   // Report Sharing & Permissions
   getSharedReports(): Promise<ReportShareConfig[]>;
@@ -129,5 +147,7 @@ export interface IReviewsService {
   saveCustomMetric(metric: CustomMetricDefinition): Promise<ReviewSettings>;
   deleteCustomMetric(metricId: string): Promise<ReviewSettings>;
   updateAlertSettings(alertSettings: AlertSettings): Promise<ReviewSettings>;
-  updateReflectionTemplates(templates: ReflectionTemplate): Promise<ReviewSettings>;
+  updateReflectionTemplates(
+    templates: ReflectionTemplate,
+  ): Promise<ReviewSettings>;
 }

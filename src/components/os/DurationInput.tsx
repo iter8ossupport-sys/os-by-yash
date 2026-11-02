@@ -63,7 +63,7 @@ export function DurationInput({
           "h-9 w-full rounded-xl border bg-secondary/60 pl-3 pr-20 text-xs font-medium text-foreground outline-none transition placeholder:text-muted-foreground/50 focus:ring-2 focus:ring-ring/30",
           parsed.valid
             ? "border-input focus:border-ring"
-            : "border-destructive text-destructive focus:border-destructive focus:ring-destructive/20"
+            : "border-destructive text-destructive focus:border-destructive focus:ring-destructive/20",
         )}
       />
       <div className="pointer-events-none absolute right-2 flex items-center">

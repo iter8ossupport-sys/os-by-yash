@@ -19,11 +19,24 @@ import {
   Zap,
 } from "lucide-react";
 import { useOS, fmtMin } from "@/lib/os/store";
-import { calculateDaySummary, calculatePeriodSummary } from "@/lib/os/reviews/analytics";
+import {
+  calculateDaySummary,
+  calculatePeriodSummary,
+} from "@/lib/os/reviews/analytics";
 import { deletePeriodReview } from "@/lib/os/reviews/operations";
 import { exportPeriodToCSV } from "@/lib/os/reviews/exportService";
 import type { DayRecord, PeriodReviewRecord, PriorityId } from "@/lib/os/types";
-import { Badge, Button, Empty, Glass, Input, Label, Modal, PriorityIcon, Select } from "@/components/os/ui";
+import {
+  Badge,
+  Button,
+  Empty,
+  Glass,
+  Input,
+  Label,
+  Modal,
+  PriorityIcon,
+  Select,
+} from "@/components/os/ui";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -44,12 +57,17 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
   const [customEnd, setCustomEnd] = useState("");
   const [stateFilter, setStateFilter] = useState<string>("all");
   const [selectedRecord, setSelectedRecord] = useState<DayRecord | null>(null);
-  const [selectedSnapshot, setSelectedSnapshot] = useState<PeriodReviewRecord | null>(null);
+  const [selectedSnapshot, setSelectedSnapshot] =
+    useState<PeriodReviewRecord | null>(null);
 
   // Side-by-side comparison state
   const [compareModalOpen, setCompareModalOpen] = useState(false);
-  const [compareDateA, setCompareDateA] = useState<string>(() => state.history[0]?.date ?? "");
-  const [compareDateB, setCompareDateB] = useState<string>(() => state.history[1]?.date ?? "");
+  const [compareDateA, setCompareDateA] = useState<string>(
+    () => state.history[0]?.date ?? "",
+  );
+  const [compareDateB, setCompareDateB] = useState<string>(
+    () => state.history[1]?.date ?? "",
+  );
 
   // Filter day records
   const filteredDays = useMemo(() => {
@@ -62,7 +80,9 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
         if (customEnd) list = list.filter((r) => r.date <= customEnd);
       } else {
         const days = parseInt(rangePreset, 10);
-        const cutoff = new Date(Date.now() - days * 864e5).toISOString().slice(0, 10);
+        const cutoff = new Date(Date.now() - days * 864e5)
+          .toISOString()
+          .slice(0, 10);
         list = list.filter((r) => r.date >= cutoff);
       }
     }
@@ -70,7 +90,11 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
     // State Filter
     if (stateFilter !== "all") {
       if (stateFilter === "corrected") {
-        list = list.filter((r) => r.state === "corrected" || (r.auditHistory && r.auditHistory.length > 0));
+        list = list.filter(
+          (r) =>
+            r.state === "corrected" ||
+            (r.auditHistory && r.auditHistory.length > 0),
+        );
       } else if (stateFilter === "manual") {
         list = list.filter((r) => r.source === "manual");
       } else if (stateFilter === "finalized") {
@@ -82,19 +106,31 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
       list = list.filter((r) => {
-        const outputsText = (r.outputs ?? []).map((o) => `${o.title} ${o.text}`).join(" ");
+        const outputsText = (r.outputs ?? [])
+          .map((o) => `${o.title} ${o.text}`)
+          .join(" ");
         const unfText = (r.unfinished ?? []).join(" ");
-        const searchScope = `${r.date} ${r.learning} ${outputsText} ${unfText}`.toLowerCase();
+        const searchScope =
+          `${r.date} ${r.learning} ${outputsText} ${unfText}`.toLowerCase();
         return searchScope.includes(q);
       });
     }
 
     return list;
-  }, [state.history, rangePreset, customStart, customEnd, stateFilter, searchQuery]);
+  }, [
+    state.history,
+    rangePreset,
+    customStart,
+    customEnd,
+    stateFilter,
+    searchQuery,
+  ]);
 
   // Period Snapshots
   const periodSnapshots = useMemo(() => {
-    return (state.periodReviews ?? []).sort((a, b) => b.finalizedAt.localeCompare(a.finalizedAt));
+    return (state.periodReviews ?? []).sort((a, b) =>
+      b.finalizedAt.localeCompare(a.finalizedAt),
+    );
   }, [state.periodReviews]);
 
   // CSV Export for filtered days
@@ -105,14 +141,26 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
     }
     const start = filteredDays[filteredDays.length - 1]?.date ?? "";
     const end = filteredDays[0]?.date ?? "";
-    const sum = calculatePeriodSummary(filteredDays, "weekly", `history-${rangePreset}`, start, end);
+    const sum = calculatePeriodSummary(
+      filteredDays,
+      "weekly",
+      `history-${rangePreset}`,
+      start,
+      end,
+    );
     exportPeriodToCSV(sum, filteredDays);
     toast.success("CSV export downloaded.");
   };
 
   // Comparison summaries & records
-  const dayRecordA = useMemo(() => state.history.find((h) => h.date === compareDateA), [state.history, compareDateA]);
-  const dayRecordB = useMemo(() => state.history.find((h) => h.date === compareDateB), [state.history, compareDateB]);
+  const dayRecordA = useMemo(
+    () => state.history.find((h) => h.date === compareDateA),
+    [state.history, compareDateA],
+  );
+  const dayRecordB = useMemo(
+    () => state.history.find((h) => h.date === compareDateB),
+    [state.history, compareDateB],
+  );
 
   const daySummaryA = useMemo(() => {
     return dayRecordA ? calculateDaySummary(dayRecordA) : null;
@@ -181,7 +229,9 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
               size="sm"
               onClick={() => {
                 if (state.history.length < 2) {
-                  toast.info("Need at least 2 historical review records to run side-by-side comparison.");
+                  toast.info(
+                    "Need at least 2 historical review records to run side-by-side comparison.",
+                  );
                   return;
                 }
                 setCompareModalOpen(true);
@@ -219,12 +269,24 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
               onChange={(e) => setRangePreset(e.target.value as RangePreset)}
               className="h-8 rounded-lg border border-input bg-secondary/50 px-2 text-xs text-foreground outline-none"
             >
-              <option value="all" className="bg-popover">All Time</option>
-              <option value="7" className="bg-popover">Last 7d</option>
-              <option value="14" className="bg-popover">Last 14d</option>
-              <option value="30" className="bg-popover">Last 30d</option>
-              <option value="90" className="bg-popover">Last 90d</option>
-              <option value="custom" className="bg-popover">Custom...</option>
+              <option value="all" className="bg-popover">
+                All Time
+              </option>
+              <option value="7" className="bg-popover">
+                Last 7d
+              </option>
+              <option value="14" className="bg-popover">
+                Last 14d
+              </option>
+              <option value="30" className="bg-popover">
+                Last 30d
+              </option>
+              <option value="90" className="bg-popover">
+                Last 90d
+              </option>
+              <option value="custom" className="bg-popover">
+                Custom...
+              </option>
             </select>
 
             {/* State */}
@@ -233,10 +295,18 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
               onChange={(e) => setStateFilter(e.target.value)}
               className="h-8 rounded-lg border border-input bg-secondary/50 px-2 text-xs text-foreground outline-none"
             >
-              <option value="all" className="bg-popover">All States</option>
-              <option value="finalized" className="bg-popover">Finalized</option>
-              <option value="corrected" className="bg-popover">Corrected</option>
-              <option value="manual" className="bg-popover">Manual</option>
+              <option value="all" className="bg-popover">
+                All States
+              </option>
+              <option value="finalized" className="bg-popover">
+                Finalized
+              </option>
+              <option value="corrected" className="bg-popover">
+                Corrected
+              </option>
+              <option value="manual" className="bg-popover">
+                Manual
+              </option>
             </select>
           </div>
         )}
@@ -280,8 +350,8 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
       )}
 
       {/* DAILY RECORDS TAB */}
-      {activeTab === "daily" && (
-        filteredDays.length === 0 ? (
+      {activeTab === "daily" &&
+        (filteredDays.length === 0 ? (
           <Empty title="No review records match criteria">
             {state.history.length === 0
               ? "Complete your first Daily Closeout in Execute to create a permanent review record."
@@ -291,9 +361,13 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
           <div className="relative pl-6 space-y-4 before:absolute before:left-2.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-gradient-to-b before:from-primary before:via-cyan before:to-violet">
             {filteredDays.map((rec) => {
               const totalMin =
-                (rec.actualMin[1] ?? 0) + (rec.actualMin[2] ?? 0) + (rec.actualMin[3] ?? 0);
+                (rec.actualMin[1] ?? 0) +
+                (rec.actualMin[2] ?? 0) +
+                (rec.actualMin[3] ?? 0);
               const totalHrs = Math.round((totalMin / 60) * 10) / 10;
-              const hasCorrection = Boolean(rec.auditHistory && rec.auditHistory.length > 0);
+              const hasCorrection = Boolean(
+                rec.auditHistory && rec.auditHistory.length > 0,
+              );
 
               return (
                 <div key={rec.date} className="relative group">
@@ -313,11 +387,17 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
                             Corrected
                           </Badge>
                         )}
-                        <span className="text-xs text-muted-foreground">{rec.dayType ?? "Standard"}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {rec.dayType ?? "Standard"}
+                        </span>
                       </div>
                       <div className="flex items-center gap-3 text-xs">
-                        <span className="text-muted-foreground">{rec.tasksDone}/{rec.tasksPlanned} tasks</span>
-                        <span className="text-success font-medium">{rec.outcomesAchieved?.length ?? 0}/3 outcomes</span>
+                        <span className="text-muted-foreground">
+                          {rec.tasksDone}/{rec.tasksPlanned} tasks
+                        </span>
+                        <span className="text-success font-medium">
+                          {rec.outcomesAchieved?.length ?? 0}/3 outcomes
+                        </span>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -327,7 +407,8 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
                             onSelectDate(rec.date);
                           }}
                         >
-                          Inspect in Daily <ChevronRight className="h-3 w-3 ml-0.5" />
+                          Inspect in Daily{" "}
+                          <ChevronRight className="h-3 w-3 ml-0.5" />
                         </Button>
                       </div>
                     </div>
@@ -359,9 +440,13 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
           <div className="space-y-3">
             {filteredDays.map((rec) => {
               const totalMin =
-                (rec.actualMin[1] ?? 0) + (rec.actualMin[2] ?? 0) + (rec.actualMin[3] ?? 0);
+                (rec.actualMin[1] ?? 0) +
+                (rec.actualMin[2] ?? 0) +
+                (rec.actualMin[3] ?? 0);
               const totalHrs = Math.round((totalMin / 60) * 10) / 10;
-              const hasCorrection = Boolean(rec.auditHistory && rec.auditHistory.length > 0);
+              const hasCorrection = Boolean(
+                rec.auditHistory && rec.auditHistory.length > 0,
+              );
 
               return (
                 <Glass
@@ -394,7 +479,9 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
                     </div>
 
                     <div className="flex items-center gap-4 text-xs">
-                      <span className="font-semibold text-foreground">{totalHrs}h logged</span>
+                      <span className="font-semibold text-foreground">
+                        {totalHrs}h logged
+                      </span>
                       <span className="text-muted-foreground">
                         {rec.tasksDone}/{rec.tasksPlanned} tasks
                       </span>
@@ -413,7 +500,8 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
                           onSelectDate(rec.date);
                         }}
                       >
-                        Inspect in Daily <ChevronRight className="h-3 w-3 ml-0.5" />
+                        Inspect in Daily{" "}
+                        <ChevronRight className="h-3 w-3 ml-0.5" />
                       </Button>
                     </div>
                   </div>
@@ -445,14 +533,14 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
               );
             })}
           </div>
-        )
-      )}
+        ))}
 
       {/* FINALIZED PERIOD SNAPSHOTS TAB */}
-      {activeTab === "periods" && (
-        periodSnapshots.length === 0 ? (
+      {activeTab === "periods" &&
+        (periodSnapshots.length === 0 ? (
           <Empty title="No finalized period snapshots yet">
-            Navigate to the Weekly or Monthly tab and click "Finalize Week / Month" to lock an immutable period snapshot.
+            Navigate to the Weekly or Monthly tab and click "Finalize Week /
+            Month" to lock an immutable period snapshot.
           </Empty>
         ) : (
           <div className="space-y-3">
@@ -506,14 +594,16 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
                 </p>
 
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground border-t border-glass-border/40 pt-2">
-                  <span>Finalized at: {new Date(snap.finalizedAt).toLocaleDateString()}</span>
+                  <span>
+                    Finalized at:{" "}
+                    {new Date(snap.finalizedAt).toLocaleDateString()}
+                  </span>
                   <span>{snap.daysIncluded.length} days recorded</span>
                 </div>
               </Glass>
             ))}
           </div>
-        )
-      )}
+        ))}
 
       {/* Day Detail Modal */}
       {selectedRecord && (
@@ -552,13 +642,25 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
             </div>
 
             <div>
-              <Label>Recorded Deliverables & Outputs ({selectedRecord.outputs?.length ?? 0})</Label>
+              <Label>
+                Recorded Deliverables & Outputs (
+                {selectedRecord.outputs?.length ?? 0})
+              </Label>
               <div className="space-y-2 max-h-48 overflow-y-auto">
                 {selectedRecord.outputs?.map((o, idx) => (
-                  <div key={idx} className="rounded-xl border border-glass-border bg-secondary/20 p-2.5">
+                  <div
+                    key={idx}
+                    className="rounded-xl border border-glass-border bg-secondary/20 p-2.5"
+                  >
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-foreground">#{o.priorityId} {o.title}</span>
-                      {o.workstream && <Badge className="text-[10px]">Workstream {o.workstream}</Badge>}
+                      <span className="font-semibold text-foreground">
+                        #{o.priorityId} {o.title}
+                      </span>
+                      {o.workstream && (
+                        <Badge className="text-[10px]">
+                          Workstream {o.workstream}
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-muted-foreground mt-0.5">{o.text}</p>
                   </div>
@@ -573,19 +675,27 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
               </div>
             </div>
 
-            {selectedRecord.auditHistory && selectedRecord.auditHistory.length > 0 && (
-              <div>
-                <Label>Audit Correction History</Label>
-                <div className="space-y-1.5">
-                  {selectedRecord.auditHistory.map((a) => (
-                    <div key={a.id} className="rounded-lg bg-secondary/30 p-2 text-[11px] text-muted-foreground">
-                      <span>Field "{a.field}" changed from <strong>{String(a.oldValue)}</strong> to <strong>{String(a.newValue)}</strong></span>
-                      <div className="italic">Reason: {a.reason}</div>
-                    </div>
-                  ))}
+            {selectedRecord.auditHistory &&
+              selectedRecord.auditHistory.length > 0 && (
+                <div>
+                  <Label>Audit Correction History</Label>
+                  <div className="space-y-1.5">
+                    {selectedRecord.auditHistory.map((a) => (
+                      <div
+                        key={a.id}
+                        className="rounded-lg bg-secondary/30 p-2 text-[11px] text-muted-foreground"
+                      >
+                        <span>
+                          Field "{a.field}" changed from{" "}
+                          <strong>{String(a.oldValue)}</strong> to{" "}
+                          <strong>{String(a.newValue)}</strong>
+                        </span>
+                        <div className="italic">Reason: {a.reason}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
           </div>
 
           <div className="mt-5 flex justify-between gap-2">
@@ -614,11 +724,17 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
           <div className="space-y-4 text-xs">
             <div className="rounded-xl bg-secondary/30 p-3 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="font-semibold text-sm">{selectedSnapshot.id} ({selectedSnapshot.type})</span>
-                <span className="text-muted-foreground">{selectedSnapshot.startDate} to {selectedSnapshot.endDate}</span>
+                <span className="font-semibold text-sm">
+                  {selectedSnapshot.id} ({selectedSnapshot.type})
+                </span>
+                <span className="text-muted-foreground">
+                  {selectedSnapshot.startDate} to {selectedSnapshot.endDate}
+                </span>
               </div>
               <div className="text-muted-foreground">
-                {selectedSnapshot.totalActualHours}h actual · {selectedSnapshot.taskCompletionRate}% task rate · {selectedSnapshot.outcomesRate}% outcome rate
+                {selectedSnapshot.totalActualHours}h actual ·{" "}
+                {selectedSnapshot.taskCompletionRate}% task rate ·{" "}
+                {selectedSnapshot.outcomesRate}% outcome rate
               </div>
             </div>
 
@@ -632,11 +748,17 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="rounded-xl border border-glass-border bg-secondary/20 p-3">
                 <span className="text-muted-foreground">P2 Workstream A</span>
-                <div className="font-semibold mt-1">{selectedSnapshot.p2HoursWorkstreamA}h ({selectedSnapshot.p2OutputsWorkstreamA} outputs)</div>
+                <div className="font-semibold mt-1">
+                  {selectedSnapshot.p2HoursWorkstreamA}h (
+                  {selectedSnapshot.p2OutputsWorkstreamA} outputs)
+                </div>
               </div>
               <div className="rounded-xl border border-glass-border bg-secondary/20 p-3">
                 <span className="text-muted-foreground">P2 Workstream B</span>
-                <div className="font-semibold mt-1">{selectedSnapshot.p2HoursWorkstreamB}h ({selectedSnapshot.p2OutputsWorkstreamB} outputs)</div>
+                <div className="font-semibold mt-1">
+                  {selectedSnapshot.p2HoursWorkstreamB}h (
+                  {selectedSnapshot.p2OutputsWorkstreamB} outputs)
+                </div>
               </div>
             </div>
           </div>
@@ -655,7 +777,8 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
         >
           <div className="space-y-4 text-xs">
             <p className="text-muted-foreground leading-relaxed">
-              Compare actual execution metrics and reflections between any two review days.
+              Compare actual execution metrics and reflections between any two
+              review days.
             </p>
 
             <div className="grid grid-cols-2 gap-4">
@@ -668,7 +791,15 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
                 >
                   {state.history.map((h) => (
                     <option key={h.date} value={h.date} className="bg-popover">
-                      {h.date} ({Math.round((((h.actualMin[1] ?? 0) + (h.actualMin[2] ?? 0) + (h.actualMin[3] ?? 0)) / 60) * 10) / 10}h)
+                      {h.date} (
+                      {Math.round(
+                        (((h.actualMin[1] ?? 0) +
+                          (h.actualMin[2] ?? 0) +
+                          (h.actualMin[3] ?? 0)) /
+                          60) *
+                          10,
+                      ) / 10}
+                      h)
                     </option>
                   ))}
                 </select>
@@ -683,7 +814,15 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
                 >
                   {state.history.map((h) => (
                     <option key={h.date} value={h.date} className="bg-popover">
-                      {h.date} ({Math.round((((h.actualMin[1] ?? 0) + (h.actualMin[2] ?? 0) + (h.actualMin[3] ?? 0)) / 60) * 10) / 10}h)
+                      {h.date} (
+                      {Math.round(
+                        (((h.actualMin[1] ?? 0) +
+                          (h.actualMin[2] ?? 0) +
+                          (h.actualMin[3] ?? 0)) /
+                          60) *
+                          10,
+                      ) / 10}
+                      h)
                     </option>
                   ))}
                 </select>
@@ -694,22 +833,28 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
               <div className="space-y-3 pt-2">
                 <div className="grid grid-cols-2 gap-3 text-center">
                   <div className="rounded-xl border border-glass-border bg-secondary/30 p-3">
-                    <div className="font-semibold text-sm text-foreground">{compareDateA}</div>
+                    <div className="font-semibold text-sm text-foreground">
+                      {compareDateA}
+                    </div>
                     <div className="font-display text-xl font-bold mt-1 text-primary">
                       {daySummaryA.totalActualHours}h
                     </div>
                     <div className="text-[11px] text-muted-foreground mt-0.5">
-                      {daySummaryA.tasksDone}/{daySummaryA.tasksPlanned} tasks · {daySummaryA.outcomesAchieved}/3 outcomes
+                      {daySummaryA.tasksDone}/{daySummaryA.tasksPlanned} tasks ·{" "}
+                      {daySummaryA.outcomesAchieved}/3 outcomes
                     </div>
                   </div>
 
                   <div className="rounded-xl border border-glass-border bg-secondary/30 p-3">
-                    <div className="font-semibold text-sm text-foreground">{compareDateB}</div>
+                    <div className="font-semibold text-sm text-foreground">
+                      {compareDateB}
+                    </div>
                     <div className="font-display text-xl font-bold mt-1 text-cyan">
                       {daySummaryB.totalActualHours}h
                     </div>
                     <div className="text-[11px] text-muted-foreground mt-0.5">
-                      {daySummaryB.tasksDone}/{daySummaryB.tasksPlanned} tasks · {daySummaryB.outcomesAchieved}/3 outcomes
+                      {daySummaryB.tasksDone}/{daySummaryB.tasksPlanned} tasks ·{" "}
+                      {daySummaryB.outcomesAchieved}/3 outcomes
                     </div>
                   </div>
                 </div>
@@ -717,38 +862,68 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
                 {/* Delta comparison summary */}
                 <div className="rounded-xl border border-glass-border bg-secondary/20 p-3 text-xs space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Actual Invested Hours Delta:</span>
+                    <span className="text-muted-foreground">
+                      Actual Invested Hours Delta:
+                    </span>
                     <span
                       className={cn(
                         "font-semibold font-mono",
-                        daySummaryB.totalActualHours - daySummaryA.totalActualHours >= 0
+                        daySummaryB.totalActualHours -
+                          daySummaryA.totalActualHours >=
+                          0
                           ? "text-success"
                           : "text-warning",
                       )}
                     >
-                      {daySummaryB.totalActualHours - daySummaryA.totalActualHours >= 0 ? "+" : ""}
-                      {Math.round((daySummaryB.totalActualHours - daySummaryA.totalActualHours) * 10) / 10}h
+                      {daySummaryB.totalActualHours -
+                        daySummaryA.totalActualHours >=
+                      0
+                        ? "+"
+                        : ""}
+                      {Math.round(
+                        (daySummaryB.totalActualHours -
+                          daySummaryA.totalActualHours) *
+                          10,
+                      ) / 10}
+                      h
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Task Completion Rate Delta:</span>
+                    <span className="text-muted-foreground">
+                      Task Completion Rate Delta:
+                    </span>
                     <span
                       className={cn(
                         "font-semibold font-mono",
-                        daySummaryB.taskCompletionRate - daySummaryA.taskCompletionRate >= 0
+                        daySummaryB.taskCompletionRate -
+                          daySummaryA.taskCompletionRate >=
+                          0
                           ? "text-success"
                           : "text-warning",
                       )}
                     >
-                      {daySummaryB.taskCompletionRate - daySummaryA.taskCompletionRate >= 0 ? "+" : ""}
-                      {daySummaryB.taskCompletionRate - daySummaryA.taskCompletionRate}%
+                      {daySummaryB.taskCompletionRate -
+                        daySummaryA.taskCompletionRate >=
+                      0
+                        ? "+"
+                        : ""}
+                      {daySummaryB.taskCompletionRate -
+                        daySummaryA.taskCompletionRate}
+                      %
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Outcomes Achieved Delta:</span>
+                    <span className="text-muted-foreground">
+                      Outcomes Achieved Delta:
+                    </span>
                     <span className="font-semibold font-mono text-foreground">
-                      {daySummaryB.outcomesAchieved - daySummaryA.outcomesAchieved >= 0 ? "+" : ""}
-                      {daySummaryB.outcomesAchieved - daySummaryA.outcomesAchieved}
+                      {daySummaryB.outcomesAchieved -
+                        daySummaryA.outcomesAchieved >=
+                      0
+                        ? "+"
+                        : ""}
+                      {daySummaryB.outcomesAchieved -
+                        daySummaryA.outcomesAchieved}
                     </span>
                   </div>
                 </div>
@@ -756,11 +931,15 @@ export function HistoryReviewView({ onSelectDate }: HistoryReviewViewProps) {
                 {/* Reflections side-by-side */}
                 <div className="grid grid-cols-2 gap-3 text-[11px] text-muted-foreground pt-1">
                   <div className="rounded-xl bg-secondary/20 p-2.5">
-                    <span className="font-semibold text-foreground block mb-0.5">Day A Takeaway:</span>
+                    <span className="font-semibold text-foreground block mb-0.5">
+                      Day A Takeaway:
+                    </span>
                     {dayRecordA?.learning || "No reflection"}
                   </div>
                   <div className="rounded-xl bg-secondary/20 p-2.5">
-                    <span className="font-semibold text-foreground block mb-0.5">Day B Takeaway:</span>
+                    <span className="font-semibold text-foreground block mb-0.5">
+                      Day B Takeaway:
+                    </span>
                     {dayRecordB?.learning || "No reflection"}
                   </div>
                 </div>

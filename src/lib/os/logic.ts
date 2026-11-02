@@ -1,28 +1,64 @@
-import type { DayRecord, OSState, Plan, PriorityId, Project, Task } from "./types";
+import type {
+  DayRecord,
+  OSState,
+  Plan,
+  PriorityId,
+  Project,
+  Task,
+} from "./types";
 
 export const elapsed = (t: Task, now = Date.now()) =>
-  t.elapsedMs + (t.status === "active" && t.startedAt != null ? now - t.startedAt : 0);
+  t.elapsedMs +
+  (t.status === "active" && t.startedAt != null ? now - t.startedAt : 0);
 
-export const selectedTasks = (p: Plan | null) => (p ? p.tasks.filter((t) => t.selected) : []);
+export const selectedTasks = (p: Plan | null) =>
+  p ? p.tasks.filter((t) => t.selected) : [];
 
 export const plannedMinutes = (p: Plan | null) =>
   selectedTasks(p).reduce((s, t) => s + t.duration, 0);
 
 const mapTask = (s: OSState, id: string, fn: (t: Task) => Task): OSState =>
-  s.plan ? { ...s, plan: { ...s.plan, tasks: s.plan.tasks.map((t) => (t.id === id ? fn(t) : t)) } } : s;
+  s.plan
+    ? {
+        ...s,
+        plan: {
+          ...s.plan,
+          tasks: s.plan.tasks.map((t) => (t.id === id ? fn(t) : t)),
+        },
+      }
+    : s;
 
 const pauseT = (t: Task, now: number): Task =>
-  t.status === "active" ? { ...t, status: "paused", elapsedMs: elapsed(t, now), startedAt: undefined } : t;
+  t.status === "active"
+    ? {
+        ...t,
+        status: "paused",
+        elapsedMs: elapsed(t, now),
+        startedAt: undefined,
+      }
+    : t;
 
 /** Approving saves the plan but never starts a task. */
 export function approvePlan(s: OSState, now = new Date()): OSState {
   if (!s.draft) return s;
   const plan: Plan = {
     ...s.draft,
-    tasks: s.draft.tasks.map((t) => ({ ...t, status: "pending", elapsedMs: 0, startedAt: undefined })),
+    tasks: s.draft.tasks.map((t) => ({
+      ...t,
+      status: "pending",
+      elapsedMs: 0,
+      startedAt: undefined,
+    })),
     approvedAt: now.toISOString(),
   };
-  return { ...s, plan, draft: null, draftStage: 1, activeTaskId: null, interruptedTaskId: null };
+  return {
+    ...s,
+    plan,
+    draft: null,
+    draftStage: 1,
+    activeTaskId: null,
+    interruptedTaskId: null,
+  };
 }
 
 /** Start/resume a task; any other running task is paused (only one active at a time). */
@@ -30,7 +66,9 @@ export function startTask(s: OSState, id: string, now = Date.now()): OSState {
   if (!s.plan) return s;
   const tasks = s.plan.tasks.map((t) =>
     t.id === id
-      ? t.status === "done" ? t : { ...t, status: "active" as const, startedAt: now }
+      ? t.status === "done"
+        ? t
+        : { ...t, status: "active" as const, startedAt: now }
       : pauseT(t, now),
   );
   return { ...s, plan: { ...s.plan, tasks }, activeTaskId: id };
@@ -40,7 +78,13 @@ export function pauseTask(s: OSState, id: string, now = Date.now()): OSState {
   return mapTask(s, id, (t) => pauseT(t, now));
 }
 
-export function finishTask(s: OSState, id: string, output: Record<string, string> = {}, outcomeAchieved = false, now = Date.now()): OSState {
+export function finishTask(
+  s: OSState,
+  id: string,
+  output: Record<string, string> = {},
+  outcomeAchieved = false,
+  now = Date.now(),
+): OSState {
   const next = mapTask(s, id, (t) => ({
     ...t,
     status: "done",
@@ -49,7 +93,10 @@ export function finishTask(s: OSState, id: string, output: Record<string, string
     output,
     outcomeAchieved,
   }));
-  return { ...next, activeTaskId: next.activeTaskId === id ? null : next.activeTaskId };
+  return {
+    ...next,
+    activeTaskId: next.activeTaskId === id ? null : next.activeTaskId,
+  };
 }
 
 /** Emergency switch: pause current task, preserving its time/output, and remember it. */
@@ -72,7 +119,11 @@ export function moveTask(s: OSState, id: string, dir: -1 | 1): OSState {
   return { ...s, plan: { ...s.plan, tasks } };
 }
 
-export function buildDayRecord(p: Plan, learning: string, now = Date.now()): DayRecord {
+export function buildDayRecord(
+  p: Plan,
+  learning: string,
+  now = Date.now(),
+): DayRecord {
   const sel = selectedTasks(p);
   const z = (): Record<PriorityId, number> => ({ 1: 0, 2: 0, 3: 0 });
   const plannedMin = z();
@@ -106,7 +157,8 @@ export function buildDayRecord(p: Plan, learning: string, now = Date.now()): Day
     durationPlannedMin: t.duration,
     durationActualMin: Math.round(elapsed(t, now) / 60000),
     kind: t.kind,
-    status: (t.status === "done" ? "done" : "unfinished") as "done" | "unfinished",
+    status: (t.status === "done" ? "done" : "unfinished") as
+      "done" | "unfinished",
     expectedOutput: t.expectedOutput,
     actualOutput: t.output,
     outcomeAchieved: Boolean(t.outcomeAchieved),
@@ -125,15 +177,21 @@ export function buildDayRecord(p: Plan, learning: string, now = Date.now()): Day
       .filter((t) => t.output && Object.values(t.output).some(Boolean))
       .map((t) => {
         const ws = t.output?.["Workstream"];
-        const entries = Object.entries(t.output!).filter(([k, v]) => Boolean(v) && k !== "Workstream");
+        const entries = Object.entries(t.output!).filter(
+          ([k, v]) => Boolean(v) && k !== "Workstream",
+        );
         return {
           title: t.title,
           priorityId: t.priorityId,
-          text: entries.length ? entries.map(([k, v]) => `${k}: ${v}`).join(" · ") : Object.values(t.output!).filter(Boolean).join(" · "),
+          text: entries.length
+            ? entries.map(([k, v]) => `${k}: ${v}`).join(" · ")
+            : Object.values(t.output!).filter(Boolean).join(" · "),
           workstream: ws,
         };
       }),
-    outcomesAchieved: ([1, 2, 3] as PriorityId[]).filter((id) => done.some((t) => t.priorityId === id && t.outcomeAchieved)),
+    outcomesAchieved: ([1, 2, 3] as PriorityId[]).filter((id) =>
+      done.some((t) => t.priorityId === id && t.outcomeAchieved),
+    ),
     unfinished: sel.filter((t) => t.status !== "done").map((t) => t.title),
     learning,
     state: "finalized",
@@ -150,7 +208,11 @@ export function buildDayRecord(p: Plan, learning: string, now = Date.now()): Day
   };
 }
 
-export function closeDay(s: OSState, learning: string, now = Date.now()): OSState {
+export function closeDay(
+  s: OSState,
+  learning: string,
+  now = Date.now(),
+): OSState {
   if (!s.plan) return s;
   const rec = buildDayRecord(s.plan, learning, now);
   return {
@@ -170,7 +232,9 @@ export function syncPrioritiesWithProjects(s: OSState): OSState {
   const projects = s.projects ?? [];
   const priorities = (s.priorities ?? []).map((p) => {
     // 1. If activeProjectId is set, look up the referenced project
-    let activeProj = p.activeProjectId ? projects.find((x) => x.id === p.activeProjectId) : undefined;
+    let activeProj = p.activeProjectId
+      ? projects.find((x) => x.id === p.activeProjectId)
+      : undefined;
 
     // If activeProj exists but was reassigned to a different priority, it cannot remain active for this priority
     if (activeProj && activeProj.priorityId !== p.id) {
@@ -181,11 +245,17 @@ export function syncPrioritiesWithProjects(s: OSState): OSState {
     if (!activeProj) {
       // First try matching by project name within this priority
       if (p.project) {
-        activeProj = projects.find((x) => x.priorityId === p.id && x.name.toLowerCase() === p.project.toLowerCase());
+        activeProj = projects.find(
+          (x) =>
+            x.priorityId === p.id &&
+            x.name.toLowerCase() === p.project.toLowerCase(),
+        );
       }
       // Next try the first project marked active under this priority
       if (!activeProj) {
-        activeProj = projects.find((x) => x.priorityId === p.id && x.status === "active");
+        activeProj = projects.find(
+          (x) => x.priorityId === p.id && x.status === "active",
+        );
       }
       // Next try any project assigned to this priority
       if (!activeProj) {
@@ -200,7 +270,12 @@ export function syncPrioritiesWithProjects(s: OSState): OSState {
         project: activeProj.name,
         milestone: activeProj.milestone || "",
         bottleneck: activeProj.bottlenecks || p.bottleneck || "",
-        status: activeProj.status === "active" ? "Active" : activeProj.status === "paused" ? "Paused" : activeProj.status,
+        status:
+          activeProj.status === "active"
+            ? "Active"
+            : activeProj.status === "paused"
+              ? "Paused"
+              : activeProj.status,
       };
     }
 
@@ -222,7 +297,11 @@ export function syncPrioritiesWithProjects(s: OSState): OSState {
  * Sets the active project for a given priority.
  * Updates priority's activeProjectId, project name, milestone, bottleneck, status.
  */
-export function setActiveProject(s: OSState, priorityId: PriorityId, projectId: string | null): OSState {
+export function setActiveProject(
+  s: OSState,
+  priorityId: PriorityId,
+  projectId: string | null,
+): OSState {
   const priorities = s.priorities.map((p) => {
     if (p.id !== priorityId) return p;
     if (!projectId) {
@@ -235,7 +314,9 @@ export function setActiveProject(s: OSState, priorityId: PriorityId, projectId: 
         status: "No active project",
       };
     }
-    const proj = s.projects.find((x) => x.id === projectId && x.priorityId === priorityId);
+    const proj = s.projects.find(
+      (x) => x.id === projectId && x.priorityId === priorityId,
+    );
     if (!proj) return p;
     return {
       ...p,
@@ -264,7 +345,9 @@ export function saveProject(s: OSState, project: Project): OSState {
 
   // Update or insert project
   const updatedProjects = existing
-    ? s.projects.map((x) => (x.id === project.id ? { ...project, demo: false } : x))
+    ? s.projects.map((x) =>
+        x.id === project.id ? { ...project, demo: false } : x,
+      )
     : [...s.projects, { ...project, demo: false }];
 
   let priorities = [...s.priorities];
@@ -282,7 +365,11 @@ export function saveProject(s: OSState, project: Project): OSState {
     const newPriority = priorities.find((p) => p.id === project.priorityId);
     const newPriorityHasActive =
       newPriority?.activeProjectId &&
-      updatedProjects.some((x) => x.id === newPriority.activeProjectId && x.priorityId === project.priorityId);
+      updatedProjects.some(
+        (x) =>
+          x.id === newPriority.activeProjectId &&
+          x.priorityId === project.priorityId,
+      );
 
     if (!newPriorityHasActive && project.status === "active") {
       priorities = priorities.map((p) => {
@@ -311,14 +398,23 @@ export function saveProject(s: OSState, project: Project): OSState {
           project: project.name,
           milestone: project.milestone,
           bottleneck: project.bottlenecks || p.bottleneck,
-          status: project.status === "active" ? "Active" : project.status === "paused" ? "Paused" : project.status,
+          status:
+            project.status === "active"
+              ? "Active"
+              : project.status === "paused"
+                ? "Paused"
+                : project.status,
         };
       }
       return p;
     });
   }
 
-  return syncPrioritiesWithProjects({ ...s, projects: updatedProjects, priorities });
+  return syncPrioritiesWithProjects({
+    ...s,
+    projects: updatedProjects,
+    priorities,
+  });
 }
 
 /**
@@ -338,9 +434,16 @@ export function deleteProject(s: OSState, projectId: string): OSState {
   });
 
   // Clear dangling reference in knowledge items if any
-  const knowledge = s.knowledge.map((k) => (k.projectId === projectId ? { ...k, projectId: undefined } : k));
+  const knowledge = s.knowledge.map((k) =>
+    k.projectId === projectId ? { ...k, projectId: undefined } : k,
+  );
 
-  return syncPrioritiesWithProjects({ ...s, projects: updatedProjects, priorities, knowledge });
+  return syncPrioritiesWithProjects({
+    ...s,
+    projects: updatedProjects,
+    priorities,
+    knowledge,
+  });
 }
 
 export {

@@ -20,7 +20,10 @@ import {
   promoteImprovementToKnowledge,
   finalizePeriodReview,
 } from "@/lib/os/reviews/operations";
-import { migrateOSState, CURRENT_SCHEMA_VERSION } from "@/lib/os/reviews/migrations";
+import {
+  migrateOSState,
+  CURRENT_SCHEMA_VERSION,
+} from "@/lib/os/reviews/migrations";
 import { demoReviewDays } from "@/lib/os/reviews/fixtures";
 import { initialState } from "@/lib/os/seed";
 import type { DayRecord, OSState, PeriodReviewRecord } from "@/lib/os/types";
@@ -63,8 +66,18 @@ describe("Yash OS Reviews — Data Foundation & Analytics", () => {
       tasksPlanned: 3,
       tasksDone: 3,
       outputs: [
-        { priorityId: 2, title: "LBES Trading Session", text: "+1.2%", workstream: "A" },
-        { priorityId: 2, title: "Stripe Billing Split Architecture", text: "Drafted", workstream: "B" },
+        {
+          priorityId: 2,
+          title: "LBES Trading Session",
+          text: "+1.2%",
+          workstream: "A",
+        },
+        {
+          priorityId: 2,
+          title: "Stripe Billing Split Architecture",
+          text: "Drafted",
+          workstream: "B",
+        },
       ],
       outcomesAchieved: [2],
       unfinished: [],
@@ -87,7 +100,13 @@ describe("Yash OS Reviews — Data Foundation & Analytics", () => {
     expect(week.id).toBe("2026-W43");
 
     // demoReviewDays has 5 days in W43 (Mon, Tue, Wed, Thu, Fri; Sat & Sun unrecorded)
-    const summary = calculatePeriodSummary(demoReviewDays, "weekly", week.id, week.startDate, week.endDate);
+    const summary = calculatePeriodSummary(
+      demoReviewDays,
+      "weekly",
+      week.id,
+      week.startDate,
+      week.endDate,
+    );
 
     expect(summary.daysIncluded.length).toBe(6);
     expect(summary.expectedDaysCount).toBe(7);
@@ -103,14 +122,26 @@ describe("Yash OS Reviews — Data Foundation & Analytics", () => {
     expect(mRange.endDate).toBe("2026-10-31");
     expect(mRange.id).toBe("2026-M10");
 
-    const summary = calculatePeriodSummary(demoReviewDays, "monthly", mRange.id, mRange.startDate, mRange.endDate);
+    const summary = calculatePeriodSummary(
+      demoReviewDays,
+      "monthly",
+      mRange.id,
+      mRange.startDate,
+      mRange.endDate,
+    );
 
     // Sum of hours in summary matches the individual days
     const totalDayHours = demoReviewDays
       .filter((d) => d.date >= mRange.startDate && d.date <= mRange.endDate)
-      .reduce((acc, d) => acc + (d.actualMin[1] + d.actualMin[2] + d.actualMin[3]) / 60, 0);
+      .reduce(
+        (acc, d) =>
+          acc + (d.actualMin[1] + d.actualMin[2] + d.actualMin[3]) / 60,
+        0,
+      );
 
-    expect(Math.abs(summary.totalActualHours - Math.round(totalDayHours * 10) / 10)).toBeLessThanOrEqual(0.2);
+    expect(
+      Math.abs(summary.totalActualHours - Math.round(totalDayHours * 10) / 10),
+    ).toBeLessThanOrEqual(0.2);
   });
 
   it("E. Audit corrections preserve history and write an immutable AuditRecord", () => {
@@ -161,7 +192,8 @@ describe("Yash OS Reviews — Data Foundation & Analytics", () => {
       priorityId: 1,
       problemStatement: "Beta users abandon during Stripe Connect step.",
       evidence: { metrics: ["Dropoff: 65%"], dayDates: ["2026-10-25"] },
-      recommendation: "Replace multi-page redirect with embedded onboarding modal.",
+      recommendation:
+        "Replace multi-page redirect with embedded onboarding modal.",
       status: "proposed",
     });
 
@@ -189,7 +221,9 @@ describe("Yash OS Reviews — Data Foundation & Analytics", () => {
     // Promote to Knowledge
     s = promoteImprovementToKnowledge(s, impId);
     expect(s.improvements![0]!.promotedToKnowledgeId).toBeDefined();
-    const kItem = s.knowledge.find((k) => k.id === s.improvements![0]!.promotedToKnowledgeId);
+    const kItem = s.knowledge.find(
+      (k) => k.id === s.improvements![0]!.promotedToKnowledgeId,
+    );
     expect(kItem).toBeDefined();
     expect(kItem!.title).toContain("Beta users abandon");
     expect(kItem!.body).toContain("Dropoff dropped to 14%");
@@ -226,12 +260,21 @@ describe("Yash OS Reviews — Data Foundation & Analytics", () => {
 
     expect(s.bottlenecks!.length).toBe(1);
     expect(s.bottlenecks![0]!.occurrenceCount).toBe(2);
-    expect(s.bottlenecks![0]!.sourceDayDates).toEqual(["2026-10-20", "2026-10-22"]);
+    expect(s.bottlenecks![0]!.sourceDayDates).toEqual([
+      "2026-10-20",
+      "2026-10-22",
+    ]);
 
     // Resolve the bottleneck
-    s = resolveBottleneck(s, botId, "Granted perpetual scoped token in Worker.");
+    s = resolveBottleneck(
+      s,
+      botId,
+      "Granted perpetual scoped token in Worker.",
+    );
     expect(s.bottlenecks![0]!.status).toBe("resolved");
-    expect(s.bottlenecks![0]!.resolutionNotes).toBe("Granted perpetual scoped token in Worker.");
+    expect(s.bottlenecks![0]!.resolutionNotes).toBe(
+      "Granted perpetual scoped token in Worker.",
+    );
   });
 
   it("H. Milestone forecasting generates conservative, realistic and optimistic scenarios", () => {
@@ -292,7 +335,11 @@ describe("Yash OS Reviews — Data Foundation & Analytics", () => {
       outcomesPlannedTotal: 3,
       outcomesAchievedTotal: 2,
       outcomesRate: 67,
-      outcomesByPriority: { 1: { planned: 1, achieved: 1 }, 2: { planned: 1, achieved: 1 }, 3: { planned: 1, achieved: 0 } },
+      outcomesByPriority: {
+        1: { planned: 1, achieved: 1 },
+        2: { planned: 1, achieved: 1 },
+        3: { planned: 1, achieved: 0 },
+      },
       executiveSummary: "Strong initial execution on P1 and P2.",
       keyOutputs: [],
       recurringBottlenecks: [],
@@ -308,7 +355,10 @@ describe("Yash OS Reviews — Data Foundation & Analytics", () => {
   });
 
   it("K. Project-level performance calculation aggregates hours, deliverables and active days", () => {
-    const projSummary = calculateProjectPerformance("demo-killarity", demoReviewDays);
+    const projSummary = calculateProjectPerformance(
+      "demo-killarity",
+      demoReviewDays,
+    );
 
     expect(projSummary.projectId).toBe("demo-killarity");
     expect(projSummary.outputsCount).toBeGreaterThan(0);
@@ -340,7 +390,13 @@ describe("Yash OS Reviews — Data Foundation & Analytics", () => {
     expect(daySummary.realismCategory).toBe("no_plan");
 
     // Empty period history
-    const emptyPeriod = calculatePeriodSummary([], "weekly", "empty-w", "2026-11-01", "2026-11-07");
+    const emptyPeriod = calculatePeriodSummary(
+      [],
+      "weekly",
+      "empty-w",
+      "2026-11-01",
+      "2026-11-07",
+    );
     expect(emptyPeriod.totalActualHours).toBe(0);
     expect(emptyPeriod.tasksDoneTotal).toBe(0);
     expect(emptyPeriod.taskCompletionRate).toBe(0);
@@ -349,9 +405,16 @@ describe("Yash OS Reviews — Data Foundation & Analytics", () => {
     expect(emptyPeriod.missingDaysCount).toBe(7);
 
     // Empty forecast
-    const emptyForecast = calculateMilestoneForecast(1, "Milestone with 0 data", 20, []);
+    const emptyForecast = calculateMilestoneForecast(
+      1,
+      "Milestone with 0 data",
+      20,
+      [],
+    );
     expect(emptyForecast.confidenceScore).toBe("Low");
-    expect(emptyForecast.scenarios.realistic.estimatedCompletionDate).toBe("Insufficient data");
+    expect(emptyForecast.scenarios.realistic.estimatedCompletionDate).toBe(
+      "Insufficient data",
+    );
   });
 
   it("M. Manual entries are distinguishable from automatic closeout records", () => {
@@ -385,7 +448,14 @@ describe("Yash OS Reviews — Data Foundation & Analytics", () => {
           actualMin: { 1: 120, 2: 90, 3: 30 },
           tasksDone: 3,
           tasksPlanned: 3,
-          outputs: [{ priorityId: 2, title: "LBES trading session", text: "+1.2%", workstream: "A" }],
+          outputs: [
+            {
+              priorityId: 2,
+              title: "LBES trading session",
+              text: "+1.2%",
+              workstream: "A",
+            },
+          ],
           outcomesAchieved: [1, 2],
           unfinished: [],
           learning: "Pre-migration record",
@@ -415,4 +485,3 @@ describe("Yash OS Reviews — Data Foundation & Analytics", () => {
     expect(h0.auditHistory).toEqual([]);
   });
 });
-

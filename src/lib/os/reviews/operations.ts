@@ -55,7 +55,9 @@ export function correctDayRecord(
     auditHistory: [...(existing.auditHistory ?? []), auditEntry],
   };
 
-  const updatedHistory = s.history.map((h) => (h.date === date ? updatedRecord : h));
+  const updatedHistory = s.history.map((h) =>
+    h.date === date ? updatedRecord : h,
+  );
   return { ...s, history: updatedHistory };
 }
 
@@ -126,7 +128,9 @@ export function addOrUpdateBottleneck(
         id: existing.id,
         occurrenceCount: existing.occurrenceCount + 1,
         lastObservedDate: bottleneck.lastObservedDate,
-        sourceDayDates: Array.from(new Set([...existing.sourceDayDates, ...bottleneck.sourceDayDates])),
+        sourceDayDates: Array.from(
+          new Set([...existing.sourceDayDates, ...bottleneck.sourceDayDates]),
+        ),
       };
       updated = current.map((b, idx) => (idx === existingIndex ? merged : b));
     } else {
@@ -237,7 +241,9 @@ export function updateAIInsight(
   const current = s.aiInsights ?? [];
   return {
     ...s,
-    aiInsights: current.map((item) => (item.id === id ? { ...item, ...patch } : item)),
+    aiInsights: current.map((item) =>
+      item.id === id ? { ...item, ...patch } : item,
+    ),
   };
 }
 
@@ -265,7 +271,9 @@ export function dismissAlert(s: OSState, id: string): OSState {
   const current = s.reviewAlerts ?? [];
   return {
     ...s,
-    reviewAlerts: current.map((a) => (a.id === id ? { ...a, dismissed: true } : a)),
+    reviewAlerts: current.map((a) =>
+      a.id === id ? { ...a, dismissed: true } : a,
+    ),
   };
 }
 
@@ -276,23 +284,43 @@ export function promoteImprovementToKnowledge(
   s: OSState,
   improvementId: string,
   nowIso = today(),
+  customItem?: Partial<KnowledgeItem>,
 ): OSState {
   const imp = (s.improvements ?? []).find((i) => i.id === improvementId);
   if (!imp) return s;
 
+  const defaultTitle = `Lesson: ${imp.problemStatement.slice(0, 60)}`;
+  const defaultBody = `Problem: ${imp.problemStatement}\n\nEvidence: ${imp.evidence.metrics.join("; ")}\n\nApproved Action: ${imp.approvedAction || imp.recommendation}\n\nEvaluation Result (${imp.evaluationOutcome || "completed"}): ${imp.evaluationNotes || "Validated through execution."}`;
+
   const knowledgeItem: KnowledgeItem = {
-    id: `k-imp-${uid()}`,
-    title: `Lesson: ${imp.problemStatement.slice(0, 60)}`,
-    type: "Learning",
-    body: `Problem: ${imp.problemStatement}\n\nEvidence: ${imp.evidence.metrics.join("; ")}\n\nApproved Action: ${imp.approvedAction || imp.recommendation}\n\nEvaluation Result (${imp.evaluationOutcome || "completed"}): ${imp.evaluationNotes || "Validated through execution."}`,
-    priorityId: imp.priorityId,
-    projectId: imp.projectId,
-    tags: `improvement, review, ${imp.periodRef}`,
-    createdAt: nowIso,
+    id: customItem?.id || `k-imp-${uid()}`,
+    title: customItem?.title || defaultTitle,
+    type: customItem?.type || "Learning",
+    knowledgeFormat: customItem?.knowledgeFormat || "principle",
+    formatData: customItem?.formatData || {
+      principle: {
+        corePrinciple: imp.approvedAction || imp.recommendation,
+        whyItMatters: imp.problemStatement,
+      },
+    },
+    body: customItem?.body || defaultBody,
+    priorityId:
+      customItem?.priorityId !== undefined
+        ? customItem.priorityId
+        : imp.priorityId,
+    projectId:
+      customItem?.projectId !== undefined
+        ? customItem.projectId
+        : imp.projectId,
+    tags: customItem?.tags || `improvement, review, ${imp.periodRef}`,
+    createdAt: customItem?.createdAt || nowIso,
+    schemaVersion: 1,
   };
 
   const updatedImprovements = (s.improvements ?? []).map((i) =>
-    i.id === improvementId ? { ...i, promotedToKnowledgeId: knowledgeItem.id } : i,
+    i.id === improvementId
+      ? { ...i, promotedToKnowledgeId: knowledgeItem.id }
+      : i,
   );
 
   return {
@@ -344,7 +372,10 @@ export function deleteCustomView(s: OSState, id: string): OSState {
 /**
  * Adds or updates a user-defined custom metric formula.
  */
-export function addCustomMetric(s: OSState, metric: CustomMetricDefinition): OSState {
+export function addCustomMetric(
+  s: OSState,
+  metric: CustomMetricDefinition,
+): OSState {
   const settings = s.reviewSettings ?? {
     defaultPeriod: "daily",
     weekStartDay: 1,
@@ -378,7 +409,9 @@ export function deleteCustomMetric(s: OSState, id: string): OSState {
     ...s,
     reviewSettings: {
       ...s.reviewSettings,
-      customMetrics: (s.reviewSettings.customMetrics ?? []).filter((m) => m.id !== id),
+      customMetrics: (s.reviewSettings.customMetrics ?? []).filter(
+        (m) => m.id !== id,
+      ),
     },
   };
 }
@@ -386,7 +419,10 @@ export function deleteCustomMetric(s: OSState, id: string): OSState {
 /**
  * Updates configurable alert sensitivity thresholds.
  */
-export function updateAlertSettings(s: OSState, alertSettings: AlertSettings): OSState {
+export function updateAlertSettings(
+  s: OSState,
+  alertSettings: AlertSettings,
+): OSState {
   const settings = s.reviewSettings ?? {
     defaultPeriod: "daily",
     weekStartDay: 1,
@@ -408,7 +444,10 @@ export function updateAlertSettings(s: OSState, alertSettings: AlertSettings): O
 /**
  * Updates customizable reflection questions.
  */
-export function updateReflectionTemplates(s: OSState, reflectionTemplates: ReflectionTemplate): OSState {
+export function updateReflectionTemplates(
+  s: OSState,
+  reflectionTemplates: ReflectionTemplate,
+): OSState {
   const settings = s.reviewSettings ?? {
     defaultPeriod: "daily",
     weekStartDay: 1,
@@ -463,7 +502,8 @@ export function markForecastDelivered(
     const diffDays = Math.round((actTime - predTime) / 864e5);
 
     let rating: ForecastSnapshot["calibrationRating"] = "accurate";
-    if (diffDays > 5) rating = "optimistic_bias"; // took longer than predicted
+    if (diffDays > 5)
+      rating = "optimistic_bias"; // took longer than predicted
     else if (diffDays < -5) rating = "conservative_bias"; // delivered faster
 
     return {
@@ -513,4 +553,3 @@ export function deleteReportShare(s: OSState, id: string): OSState {
     sharedReports: current.filter((r) => r.id !== id),
   };
 }
-

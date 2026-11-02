@@ -1,5 +1,6 @@
 export type PriorityId = 1 | 2 | 3;
-export type DayType = "College Day" | "Non-College Day" | "Weekend/Holiday" | "Custom";
+export type DayType =
+  "College Day" | "Non-College Day" | "Weekend/Holiday" | "Custom";
 export type Energy = "Low" | "Medium" | "High";
 export type TaskKind = "simple" | "measurable" | "validation";
 export type TaskStatus = "pending" | "active" | "paused" | "done";
@@ -42,6 +43,7 @@ export interface Task {
   startedAt?: number | undefined;
   output?: Record<string, string> | undefined;
   outcomeAchieved?: boolean | undefined;
+  knowledgeIds?: string[] | undefined;
 }
 
 export interface Plan {
@@ -50,6 +52,7 @@ export interface Plan {
   outcomes: Record<PriorityId, string>;
   tasks: Task[];
   approvedAt?: string | undefined;
+  outcomeKnowledgeIds?: Partial<Record<PriorityId, string[]>> | undefined;
 }
 
 export interface Metric {
@@ -62,7 +65,10 @@ export interface Goals {
   periodMonths: number;
   levelA: { text: string; metrics: Metric[]; approved: boolean };
   levelB: { text: string; days: number; metrics: Metric[]; approved: boolean };
-  levelC: Record<PriorityId, { target: string; deadline: string; evidence: string; progress: number }>;
+  levelC: Record<
+    PriorityId,
+    { target: string; deadline: string; evidence: string; progress: number }
+  >;
 }
 
 export interface ProjectDoc {
@@ -97,8 +103,54 @@ export interface Project {
 }
 
 export type KnowledgeType =
-  | "Note" | "Research" | "Learning" | "Documentation" | "Book/Resource"
-  | "User Feedback" | "Market Insight" | "Lesson" | "Decision" | "Document";
+  | "Note"
+  | "Research"
+  | "Learning"
+  | "Documentation"
+  | "Book/Resource"
+  | "User Feedback"
+  | "Market Insight"
+  | "Lesson"
+  | "Decision"
+  | "Document";
+
+export type KnowledgeFormat = "principle" | "method" | "framework" | "custom";
+
+export interface PrincipleData {
+  corePrinciple: string;
+  whyItMatters?: string | undefined;
+  whenToApply?: string | undefined;
+  exceptions?: string | undefined;
+}
+
+export interface MethodData {
+  purpose?: string | undefined;
+  steps: string[];
+  whenToUse?: string | undefined;
+  expectedResult?: string | undefined;
+}
+
+export interface FrameworkData {
+  purpose?: string | undefined;
+  whenToUse?: string | undefined;
+  components: string[];
+  howItWorks?: string | undefined;
+  expectedOutput?: string | undefined;
+  example?: string | undefined;
+}
+
+export interface CustomData {
+  formatName?: string | undefined;
+  content: string;
+}
+
+export interface KnowledgeFormatData {
+  principle?: PrincipleData | undefined;
+  method?: MethodData | undefined;
+  framework?: FrameworkData | undefined;
+  custom?: CustomData | undefined;
+}
+
 export interface KnowledgeItem {
   id: string;
   title: string;
@@ -109,11 +161,16 @@ export interface KnowledgeItem {
   tags: string;
   createdAt: string;
   demo?: boolean | undefined;
+  knowledgeFormat?: KnowledgeFormat | undefined;
+  formatData?: KnowledgeFormatData | undefined;
+  schemaVersion?: number | undefined;
 }
 
 export type ReviewState = "live" | "finalized" | "corrected";
-export type ReviewPeriodType = "daily" | "weekly" | "monthly" | "quarterly" | "custom";
-export type ImprovementStatus = "proposed" | "approved" | "rejected" | "implemented" | "evaluated";
+export type ReviewPeriodType =
+  "daily" | "weekly" | "monthly" | "quarterly" | "custom";
+export type ImprovementStatus =
+  "proposed" | "approved" | "rejected" | "implemented" | "evaluated";
 export type BottleneckSeverity = "low" | "medium" | "high" | "critical";
 export type BottleneckStatus = "active" | "mitigating" | "resolved";
 export type P2Workstream = "A" | "B";
@@ -170,16 +227,20 @@ export interface DayRecord {
   availableHours?: number | undefined;
   energy?: Energy | undefined;
   taskSnapshots?: TaskExecutionSnapshot[] | undefined;
-  p2WorkstreamMinutes?: {
-    workstreamA: number; // Cashflow Generation
-    workstreamB: number; // Fintech Product Capability
-  } | undefined;
+  p2WorkstreamMinutes?:
+    | {
+        workstreamA: number; // Cashflow Generation
+        workstreamB: number; // Fintech Product Capability
+      }
+    | undefined;
   bottlenecksNoted?: string[] | undefined;
-  reflections?: {
-    whatWorked?: string | undefined;
-    whatStalled?: string | undefined;
-    frictionNotes?: string | undefined;
-  } | undefined;
+  reflections?:
+    | {
+        whatWorked?: string | undefined;
+        whatStalled?: string | undefined;
+        frictionNotes?: string | undefined;
+      }
+    | undefined;
   auditHistory?: AuditRecord[] | undefined;
   finalizedAt?: string | undefined;
   correctedAt?: string | undefined;
@@ -216,8 +277,18 @@ export interface ReviewPeriodSummary {
   outcomesByPriority: Record<PriorityId, { planned: number; achieved: number }>;
 
   // Compounding & Recurring Friction
-  repeatedUnfinishedTasks: { title: string; count: number; priorityId: PriorityId }[];
-  keyOutputs: { date: string; priorityId: PriorityId; title: string; text: string; workstream?: string | undefined }[];
+  repeatedUnfinishedTasks: {
+    title: string;
+    count: number;
+    priorityId: PriorityId;
+  }[];
+  keyOutputs: {
+    date: string;
+    priorityId: PriorityId;
+    title: string;
+    text: string;
+    workstream?: string | undefined;
+  }[];
   learningsSummary: { date: string; text: string }[];
 
   // Strategic Progress
@@ -244,7 +315,8 @@ export interface ReviewBottleneck {
   resolutionNotes?: string | undefined;
 }
 
-export type ImprovementOutcome = "succeeded" | "partially_succeeded" | "failed" | "untested";
+export type ImprovementOutcome =
+  "succeeded" | "partially_succeeded" | "failed" | "untested";
 
 export interface ReviewImprovement {
   id: string;
@@ -294,9 +366,21 @@ export interface MilestoneForecast {
   historicalVelocityHoursPerWeek: number;
   outcomeSuccessRate: number; // 0 to 1
   scenarios: {
-    conservative: { estimatedCompletionDate: string; weeksRemaining: number; hoursNeeded: number };
-    realistic: { estimatedCompletionDate: string; weeksRemaining: number; hoursNeeded: number };
-    optimistic: { estimatedCompletionDate: string; weeksRemaining: number; hoursNeeded: number };
+    conservative: {
+      estimatedCompletionDate: string;
+      weeksRemaining: number;
+      hoursNeeded: number;
+    };
+    realistic: {
+      estimatedCompletionDate: string;
+      weeksRemaining: number;
+      hoursNeeded: number;
+    };
+    optimistic: {
+      estimatedCompletionDate: string;
+      weeksRemaining: number;
+      hoursNeeded: number;
+    };
   };
   confidenceScore: "Low" | "Medium" | "High";
   evidenceBasis: string;
@@ -333,7 +417,13 @@ export interface PeriodReviewRecord {
 
   // Qualitative Synthesis & Conclusions
   executiveSummary: string;
-  keyOutputs: { date: string; priorityId: PriorityId; title: string; text: string; workstream?: string | undefined }[];
+  keyOutputs: {
+    date: string;
+    priorityId: PriorityId;
+    title: string;
+    text: string;
+    workstream?: string | undefined;
+  }[];
   recurringBottlenecks: string[];
   learningsSummary: { date: string; text: string }[];
   approvedImprovementIds: string[];
@@ -370,7 +460,11 @@ export interface ReviewAlert {
   title: string;
   message: string;
   severity: AlertSeverity;
-  category: "workstream_imbalance" | "chronic_bottleneck" | "realism_drift" | "data_gap";
+  category:
+    | "workstream_imbalance"
+    | "chronic_bottleneck"
+    | "realism_drift"
+    | "data_gap";
   periodRef: string;
   timestamp: string;
   dismissed?: boolean | undefined;
@@ -381,8 +475,10 @@ export interface CustomMetricDefinition {
   name: string;
   description: string;
   formula: "ratio" | "rate" | "velocity" | "yield_per_hour";
-  numerator: "actualHours" | "tasksDone" | "outcomesAchieved" | "p2HoursA" | "p2HoursB";
-  denominator: "plannedHours" | "tasksPlanned" | "totalActualHours" | "recordedDays";
+  numerator:
+    "actualHours" | "tasksDone" | "outcomesAchieved" | "p2HoursA" | "p2HoursB";
+  denominator:
+    "plannedHours" | "tasksPlanned" | "totalActualHours" | "recordedDays";
   unit: "%" | "h" | "ratio" | "count";
   targetValue: number;
   priorityFilter?: PriorityId | undefined;
@@ -421,18 +517,22 @@ export interface ForecastSnapshot {
   actualDeliveredDate?: string | undefined;
   status: "projecting" | "delivered" | "missed";
   accuracyVarianceDays?: number | undefined; // actual - predicted in days
-  calibrationRating?: "accurate" | "optimistic_bias" | "conservative_bias" | undefined;
+  calibrationRating?:
+    "accurate" | "optimistic_bias" | "conservative_bias" | undefined;
 }
 
 export interface ReportShareConfig {
   id: string;
   title?: string | undefined;
   recipient?: string | undefined;
-  reportType?: "daily" | "weekly" | "monthly" | "history" | "period" | undefined;
+  reportType?:
+    "daily" | "weekly" | "monthly" | "history" | "period" | undefined;
   reportId?: string | undefined;
-  periodType?: "daily" | "weekly" | "monthly" | "history" | "period" | undefined;
+  periodType?:
+    "daily" | "weekly" | "monthly" | "history" | "period" | undefined;
   periodRef?: string | undefined;
-  permissionLevel: "summary_only" | "full_with_reflections" | "anonymized_founder";
+  permissionLevel:
+    "summary_only" | "full_with_reflections" | "anonymized_founder";
   includeFinancials: boolean; // hide/redact P2 cashflow trading details
   includeAuditHistory: boolean;
   shareToken: string; // client-generated token
@@ -445,7 +545,13 @@ export interface CustomReviewView {
   name: string;
   priorityFilter?: PriorityId | undefined;
   projectIdFilter?: string | undefined;
-  dateRangePreset?: "last_7_days" | "last_14_days" | "last_30_days" | "last_90_days" | "custom" | undefined;
+  dateRangePreset?:
+    | "last_7_days"
+    | "last_14_days"
+    | "last_30_days"
+    | "last_90_days"
+    | "custom"
+    | undefined;
   customStartDate?: string | undefined;
   customEndDate?: string | undefined;
   selectedMetricCards?: string[] | undefined;
@@ -472,7 +578,12 @@ export interface ProjectPerformanceSummary {
   tasksDoneTotal: number;
   taskCompletionRate: number; // 0 to 100
   outputsCount: number;
-  outputs: { date: string; title: string; text: string; workstream?: string | undefined }[];
+  outputs: {
+    date: string;
+    title: string;
+    text: string;
+    workstream?: string | undefined;
+  }[];
   activeDaysCount: number;
   firstActiveDate?: string | undefined;
   lastActiveDate?: string | undefined;
@@ -482,7 +593,14 @@ export interface OSState {
   schemaVersion?: number | undefined;
   theme: Theme;
   userName: string;
-  foundation: { northStar: string; northStarLong: string; mission: string; trajectory: string; phases: string[] };
+  userAvatar?: string | null | undefined;
+  foundation: {
+    northStar: string;
+    northStarLong: string;
+    mission: string;
+    trajectory: string;
+    phases: string[];
+  };
   priorities: Priority[];
   goals: Goals;
   draft: Plan | null;
@@ -493,7 +611,13 @@ export interface OSState {
   projects: Project[];
   knowledge: KnowledgeItem[];
   history: DayRecord[];
-  prefs: { timer: boolean; notifications: boolean; defaultView: string; dayTypeHours: Record<DayType, number>; constraints: string };
+  prefs: {
+    timer: boolean;
+    notifications: boolean;
+    defaultView: string;
+    dayTypeHours: Record<DayType, number>;
+    constraints: string;
+  };
 
   // Reviews Data Foundation additions
   bottlenecks?: ReviewBottleneck[] | undefined;

@@ -67,14 +67,18 @@ export class ReviewsAPIError extends Error {
 }
 
 export class ReviewsAuthenticationError extends ReviewsAPIError {
-  constructor(message = "Authentication session expired or missing Bearer token") {
+  constructor(
+    message = "Authentication session expired or missing Bearer token",
+  ) {
     super(401, "AUTH_REQUIRED", message);
     this.name = "ReviewsAuthenticationError";
   }
 }
 
 export class ReviewsConflictError extends ReviewsAPIError {
-  constructor(message = "Concurrent edit conflict detected. Re-fetch latest snapshot.") {
+  constructor(
+    message = "Concurrent edit conflict detected. Re-fetch latest snapshot.",
+  ) {
     super(409, "CONCURRENT_CONFLICT", message);
     this.name = "ReviewsConflictError";
   }
@@ -84,8 +88,8 @@ export class ReviewsBackendNotConfiguredError extends Error {
   constructor() {
     super(
       "Cloud backend is not yet configured or connected. " +
-      "The application is operating in local-first mode using LocalStorageReviewsAdapter. " +
-      "Cloud backend integration will occur in the designated backend phase."
+        "The application is operating in local-first mode using LocalStorageReviewsAdapter. " +
+        "Cloud backend integration will occur in the designated backend phase.",
     );
     this.name = "ReviewsBackendNotConfiguredError";
   }
@@ -110,14 +114,16 @@ export class CloudReviewsAdapter implements IReviewsService {
   }
 
   // Future helper for injecting secure headers
-  protected async getHeaders(idempotencyKey?: string): Promise<Record<string, string>> {
+  protected async getHeaders(
+    idempotencyKey?: string,
+  ): Promise<Record<string, string>> {
     this.checkConfigured();
     const token = await this.config!.getAuthToken();
     if (!token) throw new ReviewsAuthenticationError();
 
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       "X-YashOS-WorkspaceId": this.config!.workspaceId,
       "X-YashOS-SchemaVersion": "1.0.0",
     };
@@ -144,12 +150,16 @@ export class CloudReviewsAdapter implements IReviewsService {
     throw new ReviewsBackendNotConfiguredError();
   }
 
-  async listPeriodReviews(_type?: "weekly" | "monthly"): Promise<PeriodReviewRecord[]> {
+  async listPeriodReviews(
+    _type?: "weekly" | "monthly",
+  ): Promise<PeriodReviewRecord[]> {
     this.checkConfigured();
     throw new ReviewsBackendNotConfiguredError();
   }
 
-  async finalizePeriodReview(_req: FinalizePeriodRequest): Promise<PeriodReviewRecord> {
+  async finalizePeriodReview(
+    _req: FinalizePeriodRequest,
+  ): Promise<PeriodReviewRecord> {
     this.checkConfigured();
     throw new ReviewsBackendNotConfiguredError();
   }
@@ -164,12 +174,17 @@ export class CloudReviewsAdapter implements IReviewsService {
     throw new ReviewsBackendNotConfiguredError();
   }
 
-  async createBottleneck(_req: Omit<ReviewBottleneck, "id">): Promise<ReviewBottleneck> {
+  async createBottleneck(
+    _req: Omit<ReviewBottleneck, "id">,
+  ): Promise<ReviewBottleneck> {
     this.checkConfigured();
     throw new ReviewsBackendNotConfiguredError();
   }
 
-  async updateBottleneck(_id: string, _patch: Partial<ReviewBottleneck>): Promise<ReviewBottleneck> {
+  async updateBottleneck(
+    _id: string,
+    _patch: Partial<ReviewBottleneck>,
+  ): Promise<ReviewBottleneck> {
     this.checkConfigured();
     throw new ReviewsBackendNotConfiguredError();
   }
@@ -184,12 +199,17 @@ export class CloudReviewsAdapter implements IReviewsService {
     throw new ReviewsBackendNotConfiguredError();
   }
 
-  async createImprovement(_req: Omit<ReviewImprovement, "id">): Promise<ReviewImprovement> {
+  async createImprovement(
+    _req: Omit<ReviewImprovement, "id">,
+  ): Promise<ReviewImprovement> {
     this.checkConfigured();
     throw new ReviewsBackendNotConfiguredError();
   }
 
-  async updateImprovement(_id: string, _patch: Partial<ReviewImprovement>): Promise<ReviewImprovement> {
+  async updateImprovement(
+    _id: string,
+    _patch: Partial<ReviewImprovement>,
+  ): Promise<ReviewImprovement> {
     this.checkConfigured();
     throw new ReviewsBackendNotConfiguredError();
   }
@@ -209,7 +229,10 @@ export class CloudReviewsAdapter implements IReviewsService {
     throw new ReviewsBackendNotConfiguredError();
   }
 
-  async convertAIInsightToImprovement(_id: string, _improvementTitle: string): Promise<ReviewImprovement> {
+  async convertAIInsightToImprovement(
+    _id: string,
+    _improvementTitle: string,
+  ): Promise<ReviewImprovement> {
     this.checkConfigured();
     throw new ReviewsBackendNotConfiguredError();
   }
@@ -219,12 +242,16 @@ export class CloudReviewsAdapter implements IReviewsService {
     throw new ReviewsBackendNotConfiguredError();
   }
 
-  async saveForecastSnapshot(_req: SaveForecastSnapshotRequest): Promise<ForecastSnapshot> {
+  async saveForecastSnapshot(
+    _req: SaveForecastSnapshotRequest,
+  ): Promise<ForecastSnapshot> {
     this.checkConfigured();
     throw new ReviewsBackendNotConfiguredError();
   }
 
-  async markForecastDelivered(_req: MarkForecastDeliveredRequest): Promise<ForecastSnapshot> {
+  async markForecastDelivered(
+    _req: MarkForecastDeliveredRequest,
+  ): Promise<ForecastSnapshot> {
     this.checkConfigured();
     throw new ReviewsBackendNotConfiguredError();
   }
@@ -234,7 +261,9 @@ export class CloudReviewsAdapter implements IReviewsService {
     throw new ReviewsBackendNotConfiguredError();
   }
 
-  async createReportShare(_req: CreateReportShareRequest): Promise<ReportShareConfig> {
+  async createReportShare(
+    _req: CreateReportShareRequest,
+  ): Promise<ReportShareConfig> {
     this.checkConfigured();
     throw new ReviewsBackendNotConfiguredError();
   }
@@ -249,12 +278,16 @@ export class CloudReviewsAdapter implements IReviewsService {
     throw new ReviewsBackendNotConfiguredError();
   }
 
-  async updateSettings(_settings: Partial<ReviewSettings>): Promise<ReviewSettings> {
+  async updateSettings(
+    _settings: Partial<ReviewSettings>,
+  ): Promise<ReviewSettings> {
     this.checkConfigured();
     throw new ReviewsBackendNotConfiguredError();
   }
 
-  async saveCustomMetric(_metric: CustomMetricDefinition): Promise<ReviewSettings> {
+  async saveCustomMetric(
+    _metric: CustomMetricDefinition,
+  ): Promise<ReviewSettings> {
     this.checkConfigured();
     throw new ReviewsBackendNotConfiguredError();
   }
@@ -264,12 +297,16 @@ export class CloudReviewsAdapter implements IReviewsService {
     throw new ReviewsBackendNotConfiguredError();
   }
 
-  async updateAlertSettings(_alertSettings: AlertSettings): Promise<ReviewSettings> {
+  async updateAlertSettings(
+    _alertSettings: AlertSettings,
+  ): Promise<ReviewSettings> {
     this.checkConfigured();
     throw new ReviewsBackendNotConfiguredError();
   }
 
-  async updateReflectionTemplates(_templates: ReflectionTemplate): Promise<ReviewSettings> {
+  async updateReflectionTemplates(
+    _templates: ReflectionTemplate,
+  ): Promise<ReviewSettings> {
     this.checkConfigured();
     throw new ReviewsBackendNotConfiguredError();
   }

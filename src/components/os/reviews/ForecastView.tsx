@@ -19,9 +19,20 @@ import {
 } from "lucide-react";
 import { useOS } from "@/lib/os/store";
 import { calculateMilestoneForecast } from "@/lib/os/reviews/analytics";
-import { addForecastSnapshot, markForecastDelivered } from "@/lib/os/reviews/operations";
+import {
+  addForecastSnapshot,
+  markForecastDelivered,
+} from "@/lib/os/reviews/operations";
 import type { PriorityId, ForecastSnapshot } from "@/lib/os/types";
-import { Badge, Button, Glass, Input, Label, PriorityIcon, Progress } from "@/components/os/ui";
+import {
+  Badge,
+  Button,
+  Glass,
+  Input,
+  Label,
+  PriorityIcon,
+  Progress,
+} from "@/components/os/ui";
 import { cn } from "@/lib/utils";
 
 export function ForecastView() {
@@ -29,14 +40,20 @@ export function ForecastView() {
 
   const [selectedPriorityId, setSelectedPriorityId] = useState<PriorityId>(1);
   const [hoursNeeded, setHoursNeeded] = useState<number>(25);
-  const [markingDeliveredId, setMarkingDeliveredId] = useState<string | null>(null);
-  const [deliveredDateInput, setDeliveredDateInput] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [markingDeliveredId, setMarkingDeliveredId] = useState<string | null>(
+    null,
+  );
+  const [deliveredDateInput, setDeliveredDateInput] = useState<string>(
+    new Date().toISOString().slice(0, 10),
+  );
 
   // What-If Scenario Simulator state
   const [weeklyCapacity, setWeeklyCapacity] = useState<number>(35);
   const [priorityFocusPct, setPriorityFocusPct] = useState<number>(45);
 
-  const selectedPriority = state.priorities.find((p) => p.id === selectedPriorityId)!;
+  const selectedPriority = state.priorities.find(
+    (p) => p.id === selectedPriorityId,
+  )!;
 
   // Milestone forecast computed deterministically from real history
   const forecast = useMemo(() => {
@@ -51,7 +68,10 @@ export function ForecastView() {
 
   // What-If Simulation
   const simulatedWeeklyHours = useMemo(() => {
-    return Math.max(1, Math.round(weeklyCapacity * (priorityFocusPct / 100) * 10) / 10);
+    return Math.max(
+      1,
+      Math.round(weeklyCapacity * (priorityFocusPct / 100) * 10) / 10,
+    );
   }, [weeklyCapacity, priorityFocusPct]);
 
   const simulatedWeeks = useMemo(() => {
@@ -69,10 +89,20 @@ export function ForecastView() {
   const calibrationStats = useMemo(() => {
     const delivered = forecastHistory.filter((f) => f.status === "delivered");
     if (delivered.length === 0) {
-      return { total: forecastHistory.length, deliveredCount: 0, accuracyRate: 0, avgVariance: 0 };
+      return {
+        total: forecastHistory.length,
+        deliveredCount: 0,
+        accuracyRate: 0,
+        avgVariance: 0,
+      };
     }
-    const accurateCount = delivered.filter((f) => f.calibrationRating === "accurate").length;
-    const totalVariance = delivered.reduce((sum, f) => sum + Math.abs(f.accuracyVarianceDays ?? 0), 0);
+    const accurateCount = delivered.filter(
+      (f) => f.calibrationRating === "accurate",
+    ).length;
+    const totalVariance = delivered.reduce(
+      (sum, f) => sum + Math.abs(f.accuracyVarianceDays ?? 0),
+      0,
+    );
     return {
       total: forecastHistory.length,
       deliveredCount: delivered.length,
@@ -85,14 +115,16 @@ export function ForecastView() {
     update((s) =>
       addForecastSnapshot(s, {
         priorityId: selectedPriorityId,
-        milestoneTitle: selectedPriority.milestone || `Priority #${selectedPriorityId} Target`,
+        milestoneTitle:
+          selectedPriority.milestone ||
+          `Priority #${selectedPriorityId} Target`,
         hoursNeeded,
         predictedDate: forecast.scenarios.realistic.estimatedCompletionDate,
         predictedWeeks: forecast.scenarios.realistic.weeksRemaining,
         confidenceScore: forecast.confidenceScore,
         velocityBasisHoursPerWeek: forecast.historicalVelocityHoursPerWeek,
         status: "projecting",
-      })
+      }),
     );
   };
 
@@ -108,11 +140,16 @@ export function ForecastView() {
       <Glass className="p-4 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold font-display">Milestone Velocity & Scenario Forecasting</h2>
-            <Badge className="border-cyan/30 text-cyan bg-cyan/10">Deterministic Scenarios</Badge>
+            <h2 className="text-xl font-bold font-display">
+              Milestone Velocity & Scenario Forecasting
+            </h2>
+            <Badge className="border-cyan/30 text-cyan bg-cyan/10">
+              Deterministic Scenarios
+            </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Projects milestone completion dates using empirical execution velocity and historical outcome calibration
+            Projects milestone completion dates using empirical execution
+            velocity and historical outcome calibration
           </p>
         </div>
       </Glass>
@@ -120,7 +157,9 @@ export function ForecastView() {
       {/* Priority Selection & Estimate Input Grid */}
       <div className="grid gap-6 md:grid-cols-2">
         <Glass className="p-6 space-y-4">
-          <h3 className="text-base font-semibold">1. Select Priority & Milestone</h3>
+          <h3 className="text-base font-semibold">
+            1. Select Priority & Milestone
+          </h3>
           <div className="grid grid-cols-3 gap-2">
             {state.priorities.map((p) => (
               <button
@@ -135,13 +174,17 @@ export function ForecastView() {
                 )}
               >
                 <PriorityIcon id={p.id} className="h-7 w-7" />
-                <span className="font-semibold text-xs text-foreground">#{p.id} {p.name.split(" ")[0]}</span>
+                <span className="font-semibold text-xs text-foreground">
+                  #{p.id} {p.name.split(" ")[0]}
+                </span>
               </button>
             ))}
           </div>
 
           <div className="rounded-xl bg-secondary/30 p-3 text-xs space-y-1">
-            <span className="text-muted-foreground">Current Active Milestone:</span>
+            <span className="text-muted-foreground">
+              Current Active Milestone:
+            </span>
             <div className="font-semibold text-sm text-foreground">
               {selectedPriority.milestone || "No milestone defined"}
             </div>
@@ -153,18 +196,26 @@ export function ForecastView() {
 
         {/* Hours Needed Calibration */}
         <Glass className="p-6 space-y-4">
-          <h3 className="text-base font-semibold">2. Estimate Scope (Remaining Hours)</h3>
+          <h3 className="text-base font-semibold">
+            2. Estimate Scope (Remaining Hours)
+          </h3>
           <div>
             <div className="flex items-center justify-between text-xs mb-1.5">
-              <Label className="mb-0">Estimated Hours to Deliver Milestone</Label>
-              <span className="font-display font-bold text-sm text-primary">{hoursNeeded} hours</span>
+              <Label className="mb-0">
+                Estimated Hours to Deliver Milestone
+              </Label>
+              <span className="font-display font-bold text-sm text-primary">
+                {hoursNeeded} hours
+              </span>
             </div>
             <Input
               type="number"
               min={1}
               max={500}
               value={hoursNeeded}
-              onChange={(e) => setHoursNeeded(Math.max(1, parseInt(e.target.value, 10) || 1))}
+              onChange={(e) =>
+                setHoursNeeded(Math.max(1, parseInt(e.target.value, 10) || 1))
+              }
               className="font-mono text-base"
             />
           </div>
@@ -184,7 +235,9 @@ export function ForecastView() {
           </div>
 
           <div className="text-[11px] text-muted-foreground italic leading-relaxed">
-            Derived from your real closed execution days in the past 14 days. If a priority was starved of hours, projected completion reflects that reality.
+            Derived from your real closed execution days in the past 14 days. If
+            a priority was starved of hours, projected completion reflects that
+            reality.
           </div>
         </Glass>
       </div>
@@ -193,7 +246,9 @@ export function ForecastView() {
       <Glass className="p-6 space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <h3 className="text-base font-semibold">3. Projected Delivery Scenarios</h3>
+            <h3 className="text-base font-semibold">
+              3. Projected Delivery Scenarios
+            </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               {forecast.evidenceBasis}
             </p>
@@ -204,8 +259,8 @@ export function ForecastView() {
               forecast.confidenceScore === "High"
                 ? "border-success/30 text-success bg-success/10"
                 : forecast.confidenceScore === "Medium"
-                ? "border-cyan/30 text-cyan bg-cyan/10"
-                : "border-warning/30 text-warning bg-warning/10",
+                  ? "border-cyan/30 text-cyan bg-cyan/10"
+                  : "border-warning/30 text-warning bg-warning/10",
             )}
           >
             {forecast.confidenceScore} Confidence Rating
@@ -226,7 +281,8 @@ export function ForecastView() {
               ~{forecast.scenarios.optimistic.weeksRemaining} week(s) remaining
             </div>
             <p className="text-[11px] text-muted-foreground pt-2 border-t border-glass-border/40">
-              Assumes uninterrupted deep execution blocks and zero recurring bottlenecks.
+              Assumes uninterrupted deep execution blocks and zero recurring
+              bottlenecks.
             </p>
           </div>
 
@@ -247,7 +303,10 @@ export function ForecastView() {
               ~{forecast.scenarios.realistic.weeksRemaining} week(s) remaining
             </div>
             <p className="text-[11px] text-muted-foreground pt-2 border-t border-primary/20">
-              Grounded in current average velocity ({forecast.historicalVelocityHoursPerWeek}h/wk) calibrated by outcome success rate ({Math.round(forecast.outcomeSuccessRate * 100)}%).
+              Grounded in current average velocity (
+              {forecast.historicalVelocityHoursPerWeek}h/wk) calibrated by
+              outcome success rate (
+              {Math.round(forecast.outcomeSuccessRate * 100)}%).
             </p>
           </div>
 
@@ -260,10 +319,12 @@ export function ForecastView() {
               {forecast.scenarios.conservative.estimatedCompletionDate}
             </div>
             <div className="text-xs text-muted-foreground">
-              ~{forecast.scenarios.conservative.weeksRemaining} week(s) remaining
+              ~{forecast.scenarios.conservative.weeksRemaining} week(s)
+              remaining
             </div>
             <p className="text-[11px] text-muted-foreground pt-2 border-t border-glass-border/40">
-              Includes 35% time buffer for unexpected bugs, external blockers, and college commitments.
+              Includes 35% time buffer for unexpected bugs, external blockers,
+              and college commitments.
             </p>
           </div>
         </div>
@@ -275,10 +336,14 @@ export function ForecastView() {
           <div>
             <div className="flex items-center gap-2">
               <Sparkles className="h-4 w-4 text-cyan" />
-              <h3 className="text-base font-semibold">4. Interactive What-If Scenario Simulator</h3>
+              <h3 className="text-base font-semibold">
+                4. Interactive What-If Scenario Simulator
+              </h3>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Simulate how adjusting your total weekly work capacity and priority focus allocation accelerates or delays milestone delivery.
+              Simulate how adjusting your total weekly work capacity and
+              priority focus allocation accelerates or delays milestone
+              delivery.
             </p>
           </div>
           <Badge className="border-cyan/30 text-cyan bg-cyan/10">
@@ -291,8 +356,12 @@ export function ForecastView() {
           <div className="space-y-5 rounded-2xl bg-secondary/20 p-4 border border-glass-border/40">
             <div>
               <div className="flex justify-between items-center text-xs mb-1.5">
-                <span className="font-medium text-foreground">Total Weekly Execution Capacity</span>
-                <span className="font-mono font-bold text-primary">{weeklyCapacity} hrs / week</span>
+                <span className="font-medium text-foreground">
+                  Total Weekly Execution Capacity
+                </span>
+                <span className="font-mono font-bold text-primary">
+                  {weeklyCapacity} hrs / week
+                </span>
               </div>
               <input
                 type="range"
@@ -300,7 +369,9 @@ export function ForecastView() {
                 max={60}
                 step={5}
                 value={weeklyCapacity}
-                onChange={(e) => setWeeklyCapacity(parseInt(e.target.value, 10))}
+                onChange={(e) =>
+                  setWeeklyCapacity(parseInt(e.target.value, 10))
+                }
                 className="w-full accent-primary h-2 bg-secondary rounded-lg cursor-pointer"
               />
               <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
@@ -312,8 +383,12 @@ export function ForecastView() {
 
             <div>
               <div className="flex justify-between items-center text-xs mb-1.5">
-                <span className="font-medium text-foreground">Priority #{selectedPriorityId} Focus Allocation</span>
-                <span className="font-mono font-bold text-cyan">{priorityFocusPct}%</span>
+                <span className="font-medium text-foreground">
+                  Priority #{selectedPriorityId} Focus Allocation
+                </span>
+                <span className="font-mono font-bold text-cyan">
+                  {priorityFocusPct}%
+                </span>
               </div>
               <input
                 type="range"
@@ -321,7 +396,9 @@ export function ForecastView() {
                 max={90}
                 step={5}
                 value={priorityFocusPct}
-                onChange={(e) => setPriorityFocusPct(parseInt(e.target.value, 10))}
+                onChange={(e) =>
+                  setPriorityFocusPct(parseInt(e.target.value, 10))
+                }
                 className="w-full accent-cyan h-2 bg-secondary rounded-lg cursor-pointer"
               />
               <div className="flex justify-between text-[10px] text-muted-foreground mt-1">
@@ -333,7 +410,9 @@ export function ForecastView() {
 
             <div className="pt-2 border-t border-glass-border/30 flex items-center justify-between text-xs text-muted-foreground">
               <span>Simulated Priority Effort:</span>
-              <span className="font-mono font-semibold text-foreground">{simulatedWeeklyHours} hrs/week</span>
+              <span className="font-mono font-semibold text-foreground">
+                {simulatedWeeklyHours} hrs/week
+              </span>
             </div>
           </div>
 
@@ -353,32 +432,41 @@ export function ForecastView() {
 
             <div className="space-y-2">
               <div className="flex justify-between items-center text-xs">
-                <span className="text-muted-foreground">Variance vs. Realistic Trend:</span>
-                <span className={cn(
-                  "font-mono font-bold text-xs px-2 py-0.5 rounded-full border",
-                  simulatedWeeks < forecast.scenarios.realistic.weeksRemaining
-                    ? "border-success/30 text-success bg-success/10"
-                    : simulatedWeeks > forecast.scenarios.realistic.weeksRemaining
-                    ? "border-warning/30 text-warning bg-warning/10"
-                    : "border-glass-border text-muted-foreground bg-secondary/30"
-                )}>
+                <span className="text-muted-foreground">
+                  Variance vs. Realistic Trend:
+                </span>
+                <span
+                  className={cn(
+                    "font-mono font-bold text-xs px-2 py-0.5 rounded-full border",
+                    simulatedWeeks < forecast.scenarios.realistic.weeksRemaining
+                      ? "border-success/30 text-success bg-success/10"
+                      : simulatedWeeks >
+                          forecast.scenarios.realistic.weeksRemaining
+                        ? "border-warning/30 text-warning bg-warning/10"
+                        : "border-glass-border text-muted-foreground bg-secondary/30",
+                  )}
+                >
                   {simulatedWeeks < forecast.scenarios.realistic.weeksRemaining
                     ? `${forecast.scenarios.realistic.weeksRemaining - simulatedWeeks} weeks faster`
-                    : simulatedWeeks > forecast.scenarios.realistic.weeksRemaining
-                    ? `${simulatedWeeks - forecast.scenarios.realistic.weeksRemaining} weeks slower`
-                    : "Matches Realistic Baseline"}
+                    : simulatedWeeks >
+                        forecast.scenarios.realistic.weeksRemaining
+                      ? `${simulatedWeeks - forecast.scenarios.realistic.weeksRemaining} weeks slower`
+                      : "Matches Realistic Baseline"}
                 </span>
               </div>
               <Progress
-                value={Math.min(100, Math.round((simulatedWeeklyHours / 25) * 100))}
+                value={Math.min(
+                  100,
+                  Math.round((simulatedWeeklyHours / 25) * 100),
+                )}
                 className="h-2"
               />
               <p className="text-[11px] text-muted-foreground leading-relaxed">
                 {simulatedWeeks < forecast.scenarios.realistic.weeksRemaining
                   ? `🚀 Squeezing ${simulatedWeeklyHours}h/wk into Priority #${selectedPriorityId} delivers the milestone ~${forecast.scenarios.realistic.weeksRemaining - simulatedWeeks} week(s) ahead of your historical pace.`
                   : simulatedWeeks > forecast.scenarios.realistic.weeksRemaining
-                  ? `⚠️ At ${simulatedWeeklyHours}h/wk, this priority is receiving less than its historical pace, adding ~${simulatedWeeks - forecast.scenarios.realistic.weeksRemaining} week(s) to completion.`
-                  : `🎯 This scenario closely tracks your trailing 14-day execution velocity.`}
+                    ? `⚠️ At ${simulatedWeeklyHours}h/wk, this priority is receiving less than its historical pace, adding ~${simulatedWeeks - forecast.scenarios.realistic.weeksRemaining} week(s) to completion.`
+                    : `🎯 This scenario closely tracks your trailing 14-day execution velocity.`}
               </p>
             </div>
           </div>
@@ -390,11 +478,16 @@ export function ForecastView() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="text-base font-semibold">5. Forecast Calibration & Historical Accuracy</h3>
-              <Badge className="border-primary/30 text-primary bg-primary/10">Evidence Ledger</Badge>
+              <h3 className="text-base font-semibold">
+                5. Forecast Calibration & Historical Accuracy
+              </h3>
+              <Badge className="border-primary/30 text-primary bg-primary/10">
+                Evidence Ledger
+              </Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Tracks whether previous projected delivery dates matched reality to expose optimism or conservatism bias
+              Tracks whether previous projected delivery dates matched reality
+              to expose optimism or conservatism bias
             </p>
           </div>
 
@@ -411,7 +504,9 @@ export function ForecastView() {
         {/* Calibration Metric Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Glass className="p-3 bg-secondary/20">
-            <div className="text-[11px] text-muted-foreground uppercase font-semibold">Total Benchmarks</div>
+            <div className="text-[11px] text-muted-foreground uppercase font-semibold">
+              Total Benchmarks
+            </div>
             <div className="text-2xl font-bold font-mono text-foreground mt-1">
               {calibrationStats.total}
             </div>
@@ -421,9 +516,13 @@ export function ForecastView() {
           </Glass>
 
           <Glass className="p-3 bg-secondary/20">
-            <div className="text-[11px] text-muted-foreground uppercase font-semibold">Calibration Accuracy</div>
+            <div className="text-[11px] text-muted-foreground uppercase font-semibold">
+              Calibration Accuracy
+            </div>
             <div className="text-2xl font-bold font-mono text-success mt-1">
-              {calibrationStats.deliveredCount > 0 ? `${calibrationStats.accuracyRate}%` : "Pending"}
+              {calibrationStats.deliveredCount > 0
+                ? `${calibrationStats.accuracyRate}%`
+                : "Pending"}
             </div>
             <div className="text-[11px] text-muted-foreground mt-0.5">
               Target date met within +/- 5 days
@@ -431,9 +530,13 @@ export function ForecastView() {
           </Glass>
 
           <Glass className="p-3 bg-secondary/20">
-            <div className="text-[11px] text-muted-foreground uppercase font-semibold">Mean Variance</div>
+            <div className="text-[11px] text-muted-foreground uppercase font-semibold">
+              Mean Variance
+            </div>
             <div className="text-2xl font-bold font-mono text-cyan mt-1">
-              {calibrationStats.deliveredCount > 0 ? `+/- ${calibrationStats.avgVariance}d` : "Pending"}
+              {calibrationStats.deliveredCount > 0
+                ? `+/- ${calibrationStats.avgVariance}d`
+                : "Pending"}
             </div>
             <div className="text-[11px] text-muted-foreground mt-0.5">
               Average delivery deviation from prediction
@@ -445,9 +548,15 @@ export function ForecastView() {
         {forecastHistory.length === 0 ? (
           <div className="p-8 text-center border border-dashed rounded-lg border-glass-border">
             <Scale className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
-            <div className="text-sm font-semibold text-foreground">No Calibration Snapshots Saved Yet</div>
+            <div className="text-sm font-semibold text-foreground">
+              No Calibration Snapshots Saved Yet
+            </div>
             <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
-              Click &quot;Archive Current Projection as Benchmark&quot; to log your realistic completion date ({forecast.scenarios.realistic.estimatedCompletionDate}). Once the milestone completes, mark it delivered to compute historical calibration variance.
+              Click &quot;Archive Current Projection as Benchmark&quot; to log
+              your realistic completion date (
+              {forecast.scenarios.realistic.estimatedCompletionDate}). Once the
+              milestone completes, mark it delivered to compute historical
+              calibration variance.
             </p>
           </div>
         ) : (
@@ -457,12 +566,16 @@ export function ForecastView() {
                 key={item.id}
                 className={cn(
                   "p-4 flex flex-col md:flex-row md:items-center justify-between gap-4 border",
-                  item.status === "delivered" ? "border-glass-border bg-secondary/10" : "border-primary/20 bg-primary/5"
+                  item.status === "delivered"
+                    ? "border-glass-border bg-secondary/10"
+                    : "border-primary/20 bg-primary/5",
                 )}
               >
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm">{item.milestoneTitle}</span>
+                    <span className="font-semibold text-sm">
+                      {item.milestoneTitle}
+                    </span>
                     <Badge className="text-[10px] font-mono">
                       Priority #{item.priorityId}
                     </Badge>
@@ -473,45 +586,72 @@ export function ForecastView() {
                           ? item.calibrationRating === "accurate"
                             ? "border-success/30 text-success bg-success/10"
                             : item.calibrationRating === "optimistic_bias"
-                            ? "border-warning/30 text-warning bg-warning/10"
-                            : "border-cyan/30 text-cyan bg-cyan/10"
-                          : "border-primary/30 text-primary bg-primary/10"
+                              ? "border-warning/30 text-warning bg-warning/10"
+                              : "border-cyan/30 text-cyan bg-cyan/10"
+                          : "border-primary/30 text-primary bg-primary/10",
                       )}
                     >
                       {item.status === "delivered"
                         ? item.calibrationRating === "accurate"
                           ? "Accurate (±5d)"
                           : item.calibrationRating === "optimistic_bias"
-                          ? "Optimistic Bias (Late)"
-                          : "Conservative Bias (Early)"
+                            ? "Optimistic Bias (Late)"
+                            : "Conservative Bias (Early)"
                         : "Active Milestone"}
                     </Badge>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                    <span>Target: <strong className="text-foreground font-mono">{item.predictedDate}</strong> (~{item.predictedWeeks}w)</span>
+                    <span>
+                      Target:{" "}
+                      <strong className="text-foreground font-mono">
+                        {item.predictedDate}
+                      </strong>{" "}
+                      (~{item.predictedWeeks}w)
+                    </span>
                     {item.velocityBasisHoursPerWeek != null && (
                       <>
                         <span>•</span>
-                        <span>Pace Basis: <strong className="text-foreground font-mono">{item.velocityBasisHoursPerWeek}h/wk</strong></span>
+                        <span>
+                          Pace Basis:{" "}
+                          <strong className="text-foreground font-mono">
+                            {item.velocityBasisHoursPerWeek}h/wk
+                          </strong>
+                        </span>
                       </>
                     )}
                     {item.confidenceScore && (
                       <>
                         <span>•</span>
-                        <span>Confidence: <strong className="text-foreground">{item.confidenceScore}</strong></span>
+                        <span>
+                          Confidence:{" "}
+                          <strong className="text-foreground">
+                            {item.confidenceScore}
+                          </strong>
+                        </span>
                       </>
                     )}
                     {item.actualDeliveredDate && (
                       <>
                         <span>•</span>
-                        <span>Delivered: <strong className="text-foreground font-mono">{item.actualDeliveredDate}</strong></span>
+                        <span>
+                          Delivered:{" "}
+                          <strong className="text-foreground font-mono">
+                            {item.actualDeliveredDate}
+                          </strong>
+                        </span>
                         <span>•</span>
-                        <span className={cn(
-                          "font-mono font-semibold",
-                          (item.accuracyVarianceDays ?? 0) <= 0 ? "text-success" : "text-warning"
-                        )}>
-                          {(item.accuracyVarianceDays ?? 0) > 0 ? `+${item.accuracyVarianceDays} days late` : `${Math.abs(item.accuracyVarianceDays ?? 0)} days early`}
+                        <span
+                          className={cn(
+                            "font-mono font-semibold",
+                            (item.accuracyVarianceDays ?? 0) <= 0
+                              ? "text-success"
+                              : "text-warning",
+                          )}
+                        >
+                          {(item.accuracyVarianceDays ?? 0) > 0
+                            ? `+${item.accuracyVarianceDays} days late`
+                            : `${Math.abs(item.accuracyVarianceDays ?? 0)} days early`}
                         </span>
                       </>
                     )}
@@ -525,7 +665,9 @@ export function ForecastView() {
                         <Input
                           type="date"
                           value={deliveredDateInput}
-                          onChange={(e) => setDeliveredDateInput(e.target.value)}
+                          onChange={(e) =>
+                            setDeliveredDateInput(e.target.value)
+                          }
                           className="w-36 text-xs h-8"
                         />
                         <Button
@@ -550,7 +692,9 @@ export function ForecastView() {
                         size="sm"
                         onClick={() => {
                           setMarkingDeliveredId(item.id);
-                          setDeliveredDateInput(new Date().toISOString().slice(0, 10));
+                          setDeliveredDateInput(
+                            new Date().toISOString().slice(0, 10),
+                          );
                         }}
                         className="text-xs h-8 flex items-center gap-1.5"
                       >
@@ -573,4 +717,3 @@ export function ForecastView() {
     </div>
   );
 }
-

@@ -1,0 +1,10 @@
+node_modules
+dist
+build
+.output
+.nitro
+.wrangler
+.tanstack
+src/routeTree.gen.ts
+package-lock.json
+

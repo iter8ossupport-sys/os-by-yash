@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import {
   AlertCircle,
+  BookMarked,
   Calendar,
   Check,
   CheckCircle2,
@@ -31,9 +32,28 @@ import { useOS, fmtMin } from "@/lib/os/store";
 import { buildDayRecord } from "@/lib/os/logic";
 import { calculateDaySummary } from "@/lib/os/reviews/analytics";
 import { correctDayRecord } from "@/lib/os/reviews/operations";
-import type { DayRecord, PriorityId, Task, TaskExecutionSnapshot } from "@/lib/os/types";
+import type {
+  DayRecord,
+  KnowledgeItem,
+  PriorityId,
+  Task,
+  TaskExecutionSnapshot,
+} from "@/lib/os/types";
 import { Link } from "@tanstack/react-router";
-import { Badge, Button, Glass, Input, Label, Modal, PageHeader, PriorityIcon, Progress, Textarea } from "@/components/os/ui";
+import {
+  Badge,
+  Button,
+  Glass,
+  Input,
+  Label,
+  Modal,
+  PageHeader,
+  PriorityIcon,
+  Progress,
+  Textarea,
+} from "@/components/os/ui";
+import { KnowledgeEditorModal } from "@/components/os/KnowledgeEditorModal";
+import { today, uid } from "@/lib/os/seed";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -60,7 +80,9 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
   );
 
   // Active modal states
-  const [drillTask, setDrillTask] = useState<TaskExecutionSnapshot | null>(null);
+  const [drillTask, setDrillTask] = useState<TaskExecutionSnapshot | null>(
+    null,
+  );
   const [auditModalOpen, setAuditModalOpen] = useState(false);
   const [correctionModalOpen, setCorrectionModalOpen] = useState(false);
   const [correctionField, setCorrectionField] = useState<string>("learning");
@@ -154,6 +176,42 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
     setReflectionModalOpen(false);
   };
 
+  const [promotingLearningItem, setPromotingLearningItem] =
+    useState<KnowledgeItem | null>(null);
+
+  const handlePromoteDailyLearning = () => {
+    if (!activeRecord?.learning?.trim()) return;
+    const txt = activeRecord.learning.trim();
+    setPromotingLearningItem({
+      id: `k-daily-${uid()}`,
+      title: `Lesson: ${txt.slice(0, 60)}`,
+      type: "Learning",
+      knowledgeFormat: "principle",
+      formatData: {
+        principle: {
+          corePrinciple: txt,
+          whenToApply: `Applicable to execution after ${selectedDate}`,
+        },
+        custom: {
+          content: txt,
+        },
+      },
+      body: txt,
+      tags: `daily-review, ${selectedDate}`,
+      createdAt: today(),
+      schemaVersion: 1,
+    });
+  };
+
+  const handleConfirmPromoteLearning = (saved: KnowledgeItem) => {
+    update((s) => ({
+      ...s,
+      knowledge: [saved, ...s.knowledge],
+    }));
+    toast.success("Learning permanently saved to Yash OS Knowledge registry.");
+    setPromotingLearningItem(null);
+  };
+
   const handleSeedTomorrow = () => {
     if (!activeRecord?.unfinished || activeRecord.unfinished.length === 0) {
       toast.info("No unfinished tasks to seed.");
@@ -164,7 +222,7 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
       const currentTasks = s.plan?.tasks ?? [];
       const newTasks: Task[] = unf.map((title, i) => ({
         id: `task-seed-${Date.now()}-${i}`,
-        priorityId: (((i % 3) + 1) as PriorityId),
+        priorityId: ((i % 3) + 1) as PriorityId,
         title: title,
         duration: 45,
         timeBlock: "Morning",
@@ -189,25 +247,34 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
         },
       };
     });
-    toast.success(`Seeded ${unf.length} unfinished tasks into the active plan.`);
+    toast.success(
+      `Seeded ${unf.length} unfinished tasks into the active plan.`,
+    );
   };
 
   // Date navigation helpers
   const currentIndex = historyDates.indexOf(selectedDate);
   const canGoNewer = currentIndex > 0;
-  const canGoOlder = currentIndex >= 0 && currentIndex < historyDates.length - 1;
+  const canGoOlder =
+    currentIndex >= 0 && currentIndex < historyDates.length - 1;
 
   if (!activeRecord) {
     return (
       <Glass className="p-10 text-center space-y-4">
         <Calendar className="h-10 w-10 text-muted-foreground mx-auto opacity-70" />
-        <h2 className="text-xl font-semibold">No Review Record for {selectedDate}</h2>
+        <h2 className="text-xl font-semibold">
+          No Review Record for {selectedDate}
+        </h2>
         <p className="text-sm text-muted-foreground max-w-md mx-auto">
-          Reviews build strictly from real planning and recorded execution. Approve a plan in the Plan tab or select another date.
+          Reviews build strictly from real planning and recorded execution.
+          Approve a plan in the Plan tab or select another date.
         </p>
         <div className="flex justify-center gap-2 pt-2">
           {historyDates.length > 0 && historyDates[0] && (
-            <Button variant="primary" onClick={() => setSelectedDate(historyDates[0]!)}>
+            <Button
+              variant="primary"
+              onClick={() => setSelectedDate(historyDates[0]!)}
+            >
               View Latest Review ({historyDates[0]})
             </Button>
           )}
@@ -250,7 +317,11 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
                   Live Today · Not Closed
                 </Badge>
               ) : activeRecord.state === "corrected" ? (
-                <button type="button" onClick={() => setAuditModalOpen(true)} className="outline-none">
+                <button
+                  type="button"
+                  onClick={() => setAuditModalOpen(true)}
+                  className="outline-none"
+                >
                   <Badge className="border-cyan/40 bg-cyan/15 text-cyan cursor-pointer hover:bg-cyan/25">
                     Corrected ({activeRecord.auditHistory?.length ?? 0} edit)
                   </Badge>
@@ -304,17 +375,18 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
             </Button>
           )}
 
-          {activeRecord.auditHistory && activeRecord.auditHistory.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setAuditModalOpen(true)}
-              className="text-xs text-cyan"
-            >
-              <History className="h-3.5 w-3.5 mr-1" />
-              Audit Log ({activeRecord.auditHistory.length})
-            </Button>
-          )}
+          {activeRecord.auditHistory &&
+            activeRecord.auditHistory.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setAuditModalOpen(true)}
+                className="text-xs text-cyan"
+              >
+                <History className="h-3.5 w-3.5 mr-1" />
+                Audit Log ({activeRecord.auditHistory.length})
+              </Button>
+            )}
         </div>
       </Glass>
 
@@ -334,8 +406,8 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
             {summary?.realismCategory === "calibrated"
               ? "Calibrated"
               : summary?.realismCategory === "over_extended"
-              ? "Extended"
-              : "Under-allocated"}
+                ? "Extended"
+                : "Under-allocated"}
             )
           </div>
         </div>
@@ -390,7 +462,9 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
         <Glass className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-base font-semibold">Priority Hours · Plan vs. Actual</h3>
+              <h3 className="text-base font-semibold">
+                Priority Hours · Plan vs. Actual
+              </h3>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Exact minutes logged against daily allocation
               </p>
@@ -399,10 +473,27 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
 
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} />
-                <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} unit="h" />
+              <BarChart
+                data={chartData}
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+                <CartesianGrid
+                  strokeDasharray="3 3"
+                  stroke="var(--border)"
+                  vertical={false}
+                />
+                <XAxis
+                  dataKey="name"
+                  stroke="var(--muted-foreground)"
+                  fontSize={12}
+                  tickLine={false}
+                />
+                <YAxis
+                  stroke="var(--muted-foreground)"
+                  fontSize={12}
+                  tickLine={false}
+                  unit="h"
+                />
                 <Tooltip
                   cursor={{ fill: "rgba(255,255,255,0.04)" }}
                   contentStyle={{
@@ -410,14 +501,24 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
                     border: "1px solid var(--border)",
                     borderRadius: 12,
                   }}
-                  formatter={(val: any, name: any) => [
+                  formatter={(val: unknown, name?: string | number) => [
                     `${val ?? 0}h`,
-                    name ?? "",
+                    String(name ?? ""),
                   ]}
                 />
                 <Legend />
-                <Bar dataKey="Planned" fill="var(--primary)" radius={[6, 6, 0, 0]} barSize={28} />
-                <Bar dataKey="Actual" fill="var(--violet)" radius={[6, 6, 0, 0]} barSize={28} />
+                <Bar
+                  dataKey="Planned"
+                  fill="var(--primary)"
+                  radius={[6, 6, 0, 0]}
+                  barSize={28}
+                />
+                <Bar
+                  dataKey="Actual"
+                  fill="var(--violet)"
+                  radius={[6, 6, 0, 0]}
+                  barSize={28}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -426,7 +527,9 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
         {/* Key Outputs & Reflections */}
         <Glass className="p-6 flex flex-col justify-between space-y-4">
           <div>
-            <h3 className="text-base font-semibold mb-3">Key Recorded Outputs</h3>
+            <h3 className="text-base font-semibold mb-3">
+              Key Recorded Outputs
+            </h3>
             {activeRecord.outputs && activeRecord.outputs.length > 0 ? (
               <div className="space-y-2.5 max-h-56 overflow-y-auto pr-1">
                 {activeRecord.outputs.map((out, idx) => (
@@ -444,12 +547,16 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
                         </span>
                       )}
                     </div>
-                    <p className="text-muted-foreground leading-relaxed">{out.text}</p>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {out.text}
+                    </p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground italic">No outputs recorded for this day.</p>
+              <p className="text-xs text-muted-foreground italic">
+                No outputs recorded for this day.
+              </p>
             )}
           </div>
 
@@ -481,17 +588,31 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
               <span className="text-xs font-semibold text-cyan uppercase tracking-wider">
                 Operational Learning & Reflection
               </span>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleOpenReflectionEditor}
-                className="h-6 text-[11px] text-muted-foreground hover:text-foreground"
-              >
-                <Edit3 className="h-3 w-3 mr-1" /> Edit
-              </Button>
+              <div className="flex items-center gap-1">
+                {activeRecord.learning?.trim() && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handlePromoteDailyLearning}
+                    className="h-6 text-[11px] text-cyan hover:bg-cyan/10"
+                    title="Promote this lesson into Yash OS Knowledge base"
+                  >
+                    <BookMarked className="h-3 w-3 mr-1" /> Save as Knowledge
+                  </Button>
+                )}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleOpenReflectionEditor}
+                  className="h-6 text-[11px] text-muted-foreground hover:text-foreground"
+                >
+                  <Edit3 className="h-3 w-3 mr-1" /> Edit
+                </Button>
+              </div>
             </div>
             <p className="text-xs text-foreground leading-relaxed">
-              {activeRecord.learning || "No reflection logged. Click Edit to record key takeaways."}
+              {activeRecord.learning ||
+                "No reflection logged. Click Edit to record key takeaways."}
             </p>
           </div>
         </Glass>
@@ -501,13 +622,16 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
       <Glass className="p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-base font-semibold">Task Execution Snapshots</h3>
+            <h3 className="text-base font-semibold">
+              Task Execution Snapshots
+            </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
               Source records behind every recorded minute and output
             </p>
           </div>
           <Badge className="text-xs">
-            {activeRecord.taskSnapshots?.length ?? activeRecord.tasksPlanned} tasks
+            {activeRecord.taskSnapshots?.length ?? activeRecord.tasksPlanned}{" "}
+            tasks
           </Badge>
         </div>
 
@@ -527,20 +651,31 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
               </thead>
               <tbody className="divide-y divide-glass-border/40">
                 {activeRecord.taskSnapshots.map((t) => (
-                  <tr key={t.id} className="hover:bg-secondary/20 transition-colors">
+                  <tr
+                    key={t.id}
+                    className="hover:bg-secondary/20 transition-colors"
+                  >
                     <td className="py-2.5 pr-2">
-                      <span className="font-semibold text-foreground">#{t.priorityId}</span>
+                      <span className="font-semibold text-foreground">
+                        #{t.priorityId}
+                      </span>
                     </td>
                     <td className="py-2.5 pr-2">
-                      <div className="font-medium text-foreground">{t.title}</div>
+                      <div className="font-medium text-foreground">
+                        {t.title}
+                      </div>
                       {t.expectedOutput && (
                         <div className="text-[11px] text-muted-foreground truncate max-w-xs">
                           Target: {t.expectedOutput}
                         </div>
                       )}
                     </td>
-                    <td className="py-2.5 pr-2 text-muted-foreground">{t.durationPlannedMin}m</td>
-                    <td className="py-2.5 pr-2 font-mono text-foreground">{t.durationActualMin}m</td>
+                    <td className="py-2.5 pr-2 text-muted-foreground">
+                      {t.durationPlannedMin}m
+                    </td>
+                    <td className="py-2.5 pr-2 font-mono text-foreground">
+                      {t.durationActualMin}m
+                    </td>
                     <td className="py-2.5 pr-2">
                       <Badge
                         className={
@@ -595,7 +730,8 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
               <div className="rounded-xl bg-secondary/30 p-3">
                 <span className="text-muted-foreground">Duration</span>
                 <div className="font-semibold text-sm mt-1">
-                  {drillTask.durationActualMin}m actual / {drillTask.durationPlannedMin}m planned
+                  {drillTask.durationActualMin}m actual /{" "}
+                  {drillTask.durationPlannedMin}m planned
                 </div>
               </div>
               <div className="rounded-xl bg-secondary/30 p-3">
@@ -618,19 +754,22 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
               </div>
             </div>
 
-            {drillTask.actualOutput && Object.keys(drillTask.actualOutput).length > 0 && (
-              <div>
-                <Label>Recorded Deliverables</Label>
-                <div className="rounded-xl border border-glass-border bg-secondary/30 p-3 space-y-1.5">
-                  {Object.entries(drillTask.actualOutput).map(([k, v]) => (
-                    <div key={k} className="flex flex-col">
-                      <span className="font-semibold text-foreground">{k}:</span>
-                      <span className="text-muted-foreground">{v}</span>
-                    </div>
-                  ))}
+            {drillTask.actualOutput &&
+              Object.keys(drillTask.actualOutput).length > 0 && (
+                <div>
+                  <Label>Recorded Deliverables</Label>
+                  <div className="rounded-xl border border-glass-border bg-secondary/30 p-3 space-y-1.5">
+                    {Object.entries(drillTask.actualOutput).map(([k, v]) => (
+                      <div key={k} className="flex flex-col">
+                        <span className="font-semibold text-foreground">
+                          {k}:
+                        </span>
+                        <span className="text-muted-foreground">{v}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
             {drillTask.workstream && (
               <div>
@@ -658,9 +797,11 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
         >
           <div className="space-y-3 text-xs">
             <p className="text-muted-foreground">
-              Every historical correction is preserved with an immutable tamper-evident log.
+              Every historical correction is preserved with an immutable
+              tamper-evident log.
             </p>
-            {activeRecord.auditHistory && activeRecord.auditHistory.length > 0 ? (
+            {activeRecord.auditHistory &&
+            activeRecord.auditHistory.length > 0 ? (
               <div className="space-y-2">
                 {activeRecord.auditHistory.map((audit) => (
                   <div
@@ -669,14 +810,18 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
                   >
                     <div className="flex items-center justify-between font-mono text-[11px] text-muted-foreground">
                       <span>Field: {audit.field}</span>
-                      <span>{new Date(audit.timestamp).toLocaleTimeString()}</span>
+                      <span>
+                        {new Date(audit.timestamp).toLocaleTimeString()}
+                      </span>
                     </div>
                     <div className="flex items-center gap-2 font-medium text-foreground">
                       <span className="text-destructive line-through">
                         {String(audit.oldValue ?? "empty")}
                       </span>
                       <span>→</span>
-                      <span className="text-success">{String(audit.newValue ?? "empty")}</span>
+                      <span className="text-success">
+                        {String(audit.newValue ?? "empty")}
+                      </span>
                     </div>
                     <div className="text-muted-foreground italic mt-1">
                       Reason: "{audit.reason}"
@@ -685,7 +830,9 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground italic">No audit records recorded yet.</p>
+              <p className="text-muted-foreground italic">
+                No audit records recorded yet.
+              </p>
             )}
           </div>
           <div className="mt-5 flex justify-end">
@@ -703,7 +850,8 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
         >
           <div className="space-y-4 text-xs">
             <p className="text-muted-foreground leading-relaxed">
-              Historical records can be adjusted to correct misrecorded execution. A reason is mandatory to maintain data integrity.
+              Historical records can be adjusted to correct misrecorded
+              execution. A reason is mandatory to maintain data integrity.
             </p>
 
             <div>
@@ -713,9 +861,15 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
                 onChange={(e) => setCorrectionField(e.target.value)}
                 className="w-full h-10 rounded-xl border border-input bg-secondary/60 px-3 text-sm text-foreground outline-none"
               >
-                <option value="learning" className="bg-popover">Operational Learning</option>
-                <option value="tasksDone" className="bg-popover">Tasks Done (Count)</option>
-                <option value="tasksPlanned" className="bg-popover">Tasks Planned (Count)</option>
+                <option value="learning" className="bg-popover">
+                  Operational Learning
+                </option>
+                <option value="tasksDone" className="bg-popover">
+                  Tasks Done (Count)
+                </option>
+                <option value="tasksPlanned" className="bg-popover">
+                  Tasks Planned (Count)
+                </option>
               </select>
             </div>
 
@@ -749,7 +903,9 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
           </div>
 
           <div className="mt-6 flex justify-end gap-2">
-            <Button onClick={() => setCorrectionModalOpen(false)}>Cancel</Button>
+            <Button onClick={() => setCorrectionModalOpen(false)}>
+              Cancel
+            </Button>
             <Button variant="primary" onClick={handleApplyCorrection}>
               <Check className="h-4 w-4" /> Save Correction
             </Button>
@@ -766,18 +922,23 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
         >
           <div className="space-y-4 text-xs">
             <p className="text-muted-foreground leading-relaxed">
-              Record empirical takeaways, friction points, and lessons learned during execution.
+              Record empirical takeaways, friction points, and lessons learned
+              during execution.
             </p>
 
             {/* Configured Reflection Prompts */}
             <div className="rounded-xl border border-glass-border/60 bg-secondary/20 p-3 space-y-1.5">
-              <span className="font-semibold text-foreground text-[11px] block">Guiding Prompt Questions:</span>
+              <span className="font-semibold text-foreground text-[11px] block">
+                Guiding Prompt Questions:
+              </span>
               <ul className="space-y-1 text-muted-foreground list-disc pl-4 text-[11px]">
-                {(state.reviewSettings?.reflectionTemplates?.daily ?? [
-                  "What concrete output or breakthrough was delivered today?",
-                  "Where did execution stall, drift, or face unplanned resistance?",
-                  "What operational adjustment will improve tomorrow's plan?",
-                ]).map((q, idx) => (
+                {(
+                  state.reviewSettings?.reflectionTemplates?.daily ?? [
+                    "What concrete output or breakthrough was delivered today?",
+                    "Where did execution stall, drift, or face unplanned resistance?",
+                    "What operational adjustment will improve tomorrow's plan?",
+                  ]
+                ).map((q, idx) => (
                   <li key={idx}>{q}</li>
                 ))}
               </ul>
@@ -795,12 +956,26 @@ export function DailyReviewView({ initialDate }: DailyReviewViewProps) {
           </div>
 
           <div className="mt-6 flex justify-end gap-2">
-            <Button onClick={() => setReflectionModalOpen(false)}>Cancel</Button>
+            <Button onClick={() => setReflectionModalOpen(false)}>
+              Cancel
+            </Button>
             <Button variant="primary" onClick={handleSaveReflection}>
               <Check className="h-4 w-4" /> Save Reflection
             </Button>
           </div>
         </Modal>
+      )}
+
+      {/* Promotion to Knowledge Modal with Format Classification & Confirmation */}
+      {promotingLearningItem && (
+        <KnowledgeEditorModal
+          open={!!promotingLearningItem}
+          onClose={() => setPromotingLearningItem(null)}
+          item={promotingLearningItem}
+          onSave={handleConfirmPromoteLearning}
+          titleOverride="Promote Daily Lesson to Yash OS Knowledge"
+          confirmLabel="Confirm & Save to Knowledge"
+        />
       )}
     </div>
   );

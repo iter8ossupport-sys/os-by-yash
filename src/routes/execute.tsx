@@ -1,12 +1,51 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Check, ChevronDown, Pause, Play, Power, Target, Zap, Clock, ShieldCheck, Activity, Award } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Pause,
+  Play,
+  Power,
+  Target,
+  Zap,
+  Clock,
+  ShieldCheck,
+  Activity,
+  Award,
+  BookMarked,
+  BookOpen,
+  Plus,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useOS, useNow, fmtMin, fmtTime } from "@/lib/os/store";
-import { buildDayRecord, closeDay, elapsed, emergencyPause, finishTask, pauseTask, selectedTasks, startTask } from "@/lib/os/logic";
-import type { PriorityId, Task } from "@/lib/os/types";
+import {
+  buildDayRecord,
+  closeDay,
+  elapsed,
+  emergencyPause,
+  finishTask,
+  pauseTask,
+  selectedTasks,
+  startTask,
+} from "@/lib/os/logic";
+import type { KnowledgeItem, PriorityId, Task } from "@/lib/os/types";
 import { cn } from "@/lib/utils";
-import { Badge, Button, Glass, Input, Label, Modal, PageHeader, PriorityIcon, Progress, Textarea, priorityTone } from "@/components/os/ui";
+import {
+  Badge,
+  Button,
+  Glass,
+  Input,
+  Label,
+  Modal,
+  PageHeader,
+  PriorityIcon,
+  Progress,
+  Textarea,
+  priorityTone,
+} from "@/components/os/ui";
+import { KnowledgeViewerModal } from "@/components/os/KnowledgeViewerModal";
+import { KnowledgeSelectModal } from "@/components/os/KnowledgeSelectModal";
+import { formatBadgeClass, getKnowledgeFormat } from "@/lib/os/knowledge";
 
 type Search = { emergency?: number | undefined; closeout?: number | undefined };
 export const Route = createFileRoute("/execute")({
@@ -19,9 +58,16 @@ export const Route = createFileRoute("/execute")({
   head: () => ({
     meta: [
       { title: "Execute — Yash OS" },
-      { name: "description", content: "Focused workspace to execute the approved plan and record outputs." },
+      {
+        name: "description",
+        content:
+          "Focused workspace to execute the approved plan and record outputs.",
+      },
       { property: "og:title", content: "Execute — Yash OS" },
-      { property: "og:description", content: "Minimal, clear and action-oriented execution." },
+      {
+        property: "og:description",
+        content: "Minimal, clear and action-oriented execution.",
+      },
     ],
   }),
   component: ExecutePage,
@@ -40,6 +86,12 @@ function ExecutePage() {
   const [finishing, setFinishing] = useState<Task | null>(null);
   const [emergency, setEmergency] = useState(false);
   const [closeout, setCloseout] = useState(false);
+  const [viewingKnowledge, setViewingKnowledge] = useState<
+    KnowledgeItem[] | null
+  >(null);
+  const [linkingKnowledgeTaskId, setLinkingKnowledgeTaskId] = useState<
+    string | null
+  >(null);
   const [expandedTaskId, setExpandedTaskId] = useState<string | null>(null);
   const [ctxOpen, setCtxOpen] = useState(false);
 
@@ -64,10 +116,16 @@ function ExecutePage() {
   if (!plan) {
     return (
       <div>
-        <PageHeader eyebrow="Act" title="Execute — Focused Workspace" subtitle="Minimal, clear and action-oriented." />
+        <PageHeader
+          eyebrow="Act"
+          title="Execute — Focused Workspace"
+          subtitle="Minimal, clear and action-oriented."
+        />
         <Glass className="p-10 text-center">
           <h2 className="text-xl font-semibold">No approved plan yet</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Execution loads the plan you approve in the Plan workflow.</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Execution loads the plan you approve in the Plan workflow.
+          </p>
           <Link to="/plan">
             <Button variant="primary" className="mt-6">
               Plan today
@@ -80,7 +138,9 @@ function ExecutePage() {
 
   // The task displayed in the top execution card:
   // User selection has first priority, falling back to active running task, paused task, or first pending task.
-  const selectedTask = selectedTaskId ? sel.find((t) => t.id === selectedTaskId) : null;
+  const selectedTask = selectedTaskId
+    ? sel.find((t) => t.id === selectedTaskId)
+    : null;
   const current =
     selectedTask ??
     active ??
@@ -89,7 +149,9 @@ function ExecutePage() {
     sel.find((t) => t.status === "pending") ??
     sel[0];
 
-  const interrupted = sel.find((t) => t.id === state.interruptedTaskId && t.status !== "done");
+  const interrupted = sel.find(
+    (t) => t.id === state.interruptedTaskId && t.status !== "done",
+  );
   const doneCount = sel.filter((t) => t.status === "done").length;
   const g = state.goals;
 
@@ -103,7 +165,7 @@ function ExecutePage() {
         eyebrow="Act"
         title="Execute — Focused Workspace"
         subtitle={`${plan.context.date} · ${doneCount}/${sel.length} tasks done · ${fmtMin(
-          sel.reduce((s, t) => s + t.duration, 0)
+          sel.reduce((s, t) => s + t.duration, 0),
         )} planned`}
         actions={
           <>
@@ -128,25 +190,49 @@ function ExecutePage() {
         >
           <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-1 text-sm">
             <span>
-              <span className="text-muted-foreground">Level A:</span> {g.periodMonths}-month goal
+              <span className="text-muted-foreground">Level A:</span>{" "}
+              {g.periodMonths}-month goal
             </span>
             <span>
-              <span className="text-muted-foreground">Level B:</span> Nearest milestone ({g.levelB.days}d)
+              <span className="text-muted-foreground">Level B:</span> Nearest
+              milestone ({g.levelB.days}d)
             </span>
             <span>
-              <span className="text-muted-foreground">Level C:</span> 3 priority milestones
+              <span className="text-muted-foreground">Level C:</span> 3 priority
+              milestones
             </span>
           </div>
-          <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", ctxOpen && "rotate-180")} />
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 shrink-0 transition-transform",
+              ctxOpen && "rotate-180",
+            )}
+          />
         </button>
         {ctxOpen && (
           <div className="mt-4 grid gap-3 animate-in fade-in md:grid-cols-3">
-            <div className="rounded-2xl bg-secondary/40 p-3.5 text-xs leading-relaxed text-foreground/90">{g.levelA.text}</div>
-            <div className="rounded-2xl bg-secondary/40 p-3.5 text-xs leading-relaxed text-foreground/90">{g.levelB.text}</div>
+            <div className="rounded-2xl bg-secondary/40 p-3.5 text-xs leading-relaxed text-foreground/90">
+              {g.levelA.text}
+            </div>
+            <div className="rounded-2xl bg-secondary/40 p-3.5 text-xs leading-relaxed text-foreground/90">
+              {g.levelB.text}
+            </div>
             <div className="flex flex-col justify-center gap-2.5 rounded-2xl bg-secondary/40 p-3.5 text-xs">
               {state.priorities.map((p) => (
-                <div key={p.id} className="flex items-start gap-2 leading-relaxed">
-                  <span className={cn("font-semibold shrink-0", p.id === 1 ? "text-p1" : p.id === 2 ? "text-cyan" : "text-violet")}>
+                <div
+                  key={p.id}
+                  className="flex items-start gap-2 leading-relaxed"
+                >
+                  <span
+                    className={cn(
+                      "font-semibold shrink-0",
+                      p.id === 1
+                        ? "text-p1"
+                        : p.id === 2
+                          ? "text-cyan"
+                          : "text-violet",
+                    )}
+                  >
                     {p.id}:
                   </span>
                   <span className="text-foreground/90">
@@ -155,7 +241,11 @@ function ExecutePage() {
                 </div>
               ))}
             </div>
-            <Button size="sm" className="md:col-span-3 md:w-fit" onClick={() => setGoalsOpen(true)}>
+            <Button
+              size="sm"
+              className="md:col-span-3 md:w-fit"
+              onClick={() => setGoalsOpen(true)}
+            >
               <Target className="h-3.5 w-3.5" />
               View Goals & Milestones
             </Button>
@@ -170,54 +260,122 @@ function ExecutePage() {
           <div className="relative grid gap-6 md:grid-cols-[1fr_auto] md:items-center">
             <div>
               <div className="flex flex-wrap items-center gap-2">
-                <Badge>#{current.priorityId} {state.priorities[current.priorityId - 1]?.name}</Badge>
-                <Badge>{state.priorities[current.priorityId - 1]?.project || "No active project"}</Badge>
+                <Badge>
+                  #{current.priorityId}{" "}
+                  {state.priorities[current.priorityId - 1]?.name}
+                </Badge>
+                <Badge>
+                  {state.priorities[current.priorityId - 1]?.project ||
+                    "No active project"}
+                </Badge>
                 <Badge
                   className={
                     current.status === "active"
                       ? "text-success border-success/30 font-semibold"
                       : current.status === "paused"
-                      ? "text-warning border-warning/30"
-                      : current.status === "done"
-                      ? "text-muted-foreground"
-                      : ""
+                        ? "text-warning border-warning/30"
+                        : current.status === "done"
+                          ? "text-muted-foreground"
+                          : ""
                   }
                 >
                   {current.status === "active"
                     ? "In progress"
                     : current.status === "paused"
-                    ? "Paused"
-                    : current.status === "done"
-                    ? "Completed"
-                    : "Up next"}
+                      ? "Paused"
+                      : current.status === "done"
+                        ? "Completed"
+                        : "Up next"}
                 </Badge>
               </div>
-              <h2 className="mt-3 text-2xl font-semibold md:text-3xl">{current.title}</h2>
+              <h2 className="mt-3 text-2xl font-semibold md:text-3xl">
+                {current.title}
+              </h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                <span className="font-medium text-foreground/80">Today's Outcome:</span> {plan.outcomes[current.priorityId]}
+                <span className="font-medium text-foreground/80">
+                  Today's Outcome:
+                </span>{" "}
+                {plan.outcomes[current.priorityId]}
               </p>
               <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
                 <div className="rounded-xl border border-glass-border bg-secondary/30 p-3">
                   <Label className="mb-1 text-[11px]">Expected output</Label>
-                  <div className="text-xs text-foreground/90">{current.expectedOutput}</div>
+                  <div className="text-xs text-foreground/90">
+                    {current.expectedOutput}
+                  </div>
                 </div>
                 <div className="rounded-xl border border-glass-border bg-secondary/30 p-3">
                   <Label className="mb-1 text-[11px]">Success criteria</Label>
-                  <div className="text-xs text-foreground/90">{current.successCriteria}</div>
+                  <div className="text-xs text-foreground/90">
+                    {current.successCriteria}
+                  </div>
                 </div>
               </div>
+
+              {/* Optional Focused Knowledge Reference (Non-intrusive) */}
+              {(() => {
+                const activePriority = state.priorities[current.priorityId - 1];
+                const activeProjectId = activePriority?.activeProjectId;
+                const relevantKnowledge = state.knowledge.filter((k) => {
+                  if ((current.knowledgeIds || []).includes(k.id)) return true;
+                  if (
+                    (
+                      plan.outcomeKnowledgeIds?.[current.priorityId] || []
+                    ).includes(k.id)
+                  )
+                    return true;
+                  if (activeProjectId && k.projectId === activeProjectId)
+                    return true;
+                  return false;
+                });
+
+                return (
+                  <div className="mt-4 flex flex-wrap items-center gap-2">
+                    {relevantKnowledge.length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="glass"
+                        onClick={() => setViewingKnowledge(relevantKnowledge)}
+                        className="h-8 text-xs border-cyan/40 text-cyan hover:bg-cyan/15 glow"
+                        title="View linked principles, methods, and frameworks"
+                      >
+                        <BookOpen className="h-3.5 w-3.5 mr-1" />
+                        Reference Knowledge ({relevantKnowledge.length})
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setLinkingKnowledgeTaskId(current.id)}
+                      className="h-8 text-xs text-muted-foreground hover:text-foreground"
+                      title="Link principles, methods, or frameworks to this active task"
+                    >
+                      <Plus className="h-3 w-3 mr-1" />
+                      {relevantKnowledge.length > 0
+                        ? "Link More"
+                        : "Reference Knowledge"}
+                    </Button>
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="flex flex-col items-center gap-4">
               {state.prefs.timer && (
                 <div className="flex h-36 w-36 flex-col items-center justify-center rounded-full border-4 border-primary/60 glow">
-                  <div className="font-display text-3xl font-semibold tabular-nums">{fmtTime(elapsed(current, now))}</div>
-                  <div className="text-xs text-muted-foreground">of {fmtMin(current.duration)}</div>
+                  <div className="font-display text-3xl font-semibold tabular-nums">
+                    {fmtTime(elapsed(current, now))}
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    of {fmtMin(current.duration)}
+                  </div>
                 </div>
               )}
               <div className="flex gap-2">
                 {current.status === "active" ? (
-                  <Button onClick={() => update((s) => pauseTask(s, current.id))}>
+                  <Button
+                    onClick={() => update((s) => pauseTask(s, current.id))}
+                  >
                     <Pause className="h-4 w-4" />
                     Pause
                   </Button>
@@ -228,7 +386,10 @@ function ExecutePage() {
                     onClick={() =>
                       update((s) => ({
                         ...startTask(s, current.id),
-                        interruptedTaskId: s.interruptedTaskId === current.id ? null : s.interruptedTaskId,
+                        interruptedTaskId:
+                          s.interruptedTaskId === current.id
+                            ? null
+                            : s.interruptedTaskId,
                       }))
                     }
                   >
@@ -248,8 +409,14 @@ function ExecutePage() {
 
       {!current && (
         <Glass className="p-8 text-center">
-          <h2 className="text-xl font-semibold">All approved tasks are finished.</h2>
-          <Button variant="primary" className="mt-4" onClick={() => setCloseout(true)}>
+          <h2 className="text-xl font-semibold">
+            All approved tasks are finished.
+          </h2>
+          <Button
+            variant="primary"
+            className="mt-4"
+            onClick={() => setCloseout(true)}
+          >
             Run daily closeout
           </Button>
         </Glass>
@@ -258,8 +425,12 @@ function ExecutePage() {
       {/* 2. REDESIGNED BOTTOM THREE-PRIORITY TASK AREA */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h3 className="font-display text-lg font-semibold tracking-tight">Approved Daily Execution</h3>
-          <span className="text-xs text-muted-foreground">Click any task to focus it in the execution workspace</span>
+          <h3 className="font-display text-lg font-semibold tracking-tight">
+            Approved Daily Execution
+          </h3>
+          <span className="text-xs text-muted-foreground">
+            Click any task to focus it in the execution workspace
+          </span>
         </div>
 
         <div className="grid gap-5 lg:grid-cols-3">
@@ -270,24 +441,33 @@ function ExecutePage() {
               p.id === 1
                 ? "1 — Founder Capability"
                 : p.id === 2
-                ? "2 — Cashflow Infrastructure"
-                : "3 — Learning for Execution";
+                  ? "2 — Cashflow Infrastructure"
+                  : "3 — Learning for Execution";
 
             return (
               <Glass
                 key={p.id}
                 className={cn(
                   "flex flex-col p-5 shadow-sm transition",
-                  p.id === 1 ? "border-t-2 border-t-p1" : p.id === 2 ? "border-t-2 border-t-p2" : "border-t-2 border-t-p3"
+                  p.id === 1
+                    ? "border-t-2 border-t-p1"
+                    : p.id === 2
+                      ? "border-t-2 border-t-p2"
+                      : "border-t-2 border-t-p3",
                 )}
               >
                 {/* Priority Header */}
                 <div className="mb-3 flex items-start gap-3">
                   <PriorityIcon id={p.id} className="h-8 w-8" />
                   <div className="flex-1 min-w-0">
-                    <div className="font-display text-sm font-semibold truncate">{pNameLabel}</div>
+                    <div className="font-display text-sm font-semibold truncate">
+                      {pNameLabel}
+                    </div>
                     <div className="text-xs text-muted-foreground truncate">
-                      Project: <span className="font-medium text-foreground/80">{p.project || "No active project"}</span>
+                      Project:{" "}
+                      <span className="font-medium text-foreground/80">
+                        {p.project || "No active project"}
+                      </span>
                     </div>
                   </div>
                   <span className="rounded-full bg-secondary/80 px-2 py-0.5 text-xs font-semibold text-muted-foreground">
@@ -297,7 +477,9 @@ function ExecutePage() {
 
                 {/* Today's approved outcome displayed prominently in one concise line */}
                 <div className="mb-4 rounded-xl border border-glass-border bg-background/50 p-2.5 text-xs">
-                  <div className="font-semibold text-cyan">Today's Approved Outcome:</div>
+                  <div className="font-semibold text-cyan">
+                    Today's Approved Outcome:
+                  </div>
                   <div className="mt-0.5 text-foreground/90 leading-snug line-clamp-2">
                     {plan.outcomes[p.id] || "No outcome specified."}
                   </div>
@@ -317,7 +499,8 @@ function ExecutePage() {
                     </div>
                   ) : (
                     pTasks.map((t) => {
-                      const globalOrder = sel.findIndex((x) => x.id === t.id) + 1;
+                      const globalOrder =
+                        sel.findIndex((x) => x.id === t.id) + 1;
                       const isSelected = t.id === current?.id;
                       const isExpanded = expandedTaskId === t.id;
 
@@ -330,7 +513,7 @@ function ExecutePage() {
                             isSelected
                               ? "border-primary/60 bg-primary/15 shadow-sm ring-1 ring-primary/40 glow"
                               : "border-glass-border bg-secondary/30 hover:border-primary/30 hover:bg-secondary/50",
-                            t.status === "done" && "opacity-75"
+                            t.status === "done" && "opacity-75",
                           )}
                         >
                           <div className="flex items-center gap-2.5">
@@ -344,7 +527,8 @@ function ExecutePage() {
                               <div
                                 className={cn(
                                   "text-xs font-medium leading-snug truncate",
-                                  t.status === "done" && "line-through text-muted-foreground"
+                                  t.status === "done" &&
+                                    "line-through text-muted-foreground",
                                 )}
                               >
                                 {t.title}
@@ -355,7 +539,12 @@ function ExecutePage() {
                                   {fmtMin(t.duration)}
                                 </span>
                                 {t.elapsedMs > 0 && (
-                                  <span>· actual {fmtMin(Math.round(elapsed(t, now) / 60000))}</span>
+                                  <span>
+                                    · actual{" "}
+                                    {fmtMin(
+                                      Math.round(elapsed(t, now) / 60000),
+                                    )}
+                                  </span>
                                 )}
                               </div>
                             </div>
@@ -363,13 +552,19 @@ function ExecutePage() {
                             {/* Status Badge */}
                             <div className="flex items-center gap-1.5">
                               {t.status === "active" && (
-                                <Badge className="text-success border-success/30 font-semibold text-[10px]">Active</Badge>
+                                <Badge className="text-success border-success/30 font-semibold text-[10px]">
+                                  Active
+                                </Badge>
                               )}
                               {t.status === "paused" && (
-                                <Badge className="text-warning border-warning/30 text-[10px]">Paused</Badge>
+                                <Badge className="text-warning border-warning/30 text-[10px]">
+                                  Paused
+                                </Badge>
                               )}
                               {t.status === "done" && (
-                                <Badge className="text-muted-foreground text-[10px]">Done</Badge>
+                                <Badge className="text-muted-foreground text-[10px]">
+                                  Done
+                                </Badge>
                               )}
 
                               {/* Separate Obvious Disclosure Arrow */}
@@ -383,7 +578,10 @@ function ExecutePage() {
                                 className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary/80 hover:text-foreground transition"
                               >
                                 <ChevronDown
-                                  className={cn("h-4 w-4 transition-transform duration-200", isExpanded && "rotate-180")}
+                                  className={cn(
+                                    "h-4 w-4 transition-transform duration-200",
+                                    isExpanded && "rotate-180",
+                                  )}
                                 />
                               </button>
                             </div>
@@ -431,7 +629,8 @@ function ExecutePage() {
                                   4. How to do it
                                 </div>
                                 <div className="text-xs text-foreground/90 leading-relaxed break-words">
-                                  {t.how || "Execute in focused block following standard operating procedure."}
+                                  {t.how ||
+                                    "Execute in focused block following standard operating procedure."}
                                 </div>
                               </div>
 
@@ -451,7 +650,8 @@ function ExecutePage() {
                                   6. Expected Output
                                 </div>
                                 <div className="text-xs text-foreground/90 leading-relaxed break-words">
-                                  {t.expectedOutput || "Task completed with documented result."}
+                                  {t.expectedOutput ||
+                                    "Task completed with documented result."}
                                 </div>
                               </div>
 
@@ -461,14 +661,17 @@ function ExecutePage() {
                                   7. Success Criteria
                                 </div>
                                 <div className="text-xs text-foreground/90 leading-relaxed break-words">
-                                  {t.successCriteria || "All stated output criteria met and verified."}
+                                  {t.successCriteria ||
+                                    "All stated output criteria met and verified."}
                                 </div>
                               </div>
 
                               {/* Recorded Output (If Present) */}
                               {t.output && Object.keys(t.output).length > 0 && (
                                 <div className="rounded-xl border border-success/30 bg-success/10 p-3 text-success">
-                                  <div className="font-semibold text-[11px] mb-1">Recorded Output:</div>
+                                  <div className="font-semibold text-[11px] mb-1">
+                                    Recorded Output:
+                                  </div>
                                   <div className="text-xs leading-relaxed break-words">
                                     {Object.entries(t.output)
                                       .map(([k, v]) => `${k}: ${v}`)
@@ -477,11 +680,54 @@ function ExecutePage() {
                                 </div>
                               )}
 
+                              {/* Linked Knowledge for this task */}
+                              {t.knowledgeIds && t.knowledgeIds.length > 0 && (
+                                <div className="rounded-xl border border-glass-border/60 bg-background/50 p-3">
+                                  <div className="text-[11px] font-semibold tracking-wide text-muted-foreground/90 mb-1.5 flex items-center justify-between">
+                                    <span>Linked Knowledge</span>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 text-[10px] text-cyan hover:bg-cyan/10"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        const items = state.knowledge.filter(
+                                          (k) =>
+                                            (t.knowledgeIds || []).includes(
+                                              k.id,
+                                            ),
+                                        );
+                                        setViewingKnowledge(items);
+                                      }}
+                                    >
+                                      <BookOpen className="h-3 w-3 mr-1" /> View
+                                      Full
+                                    </Button>
+                                  </div>
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {state.knowledge
+                                      .filter((k) =>
+                                        (t.knowledgeIds || []).includes(k.id),
+                                      )
+                                      .map((k) => (
+                                        <span
+                                          key={k.id}
+                                          className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] ${formatBadgeClass(
+                                            getKnowledgeFormat(k),
+                                          )}`}
+                                        >
+                                          {k.title}
+                                        </span>
+                                      ))}
+                                  </div>
+                                </div>
+                              )}
+
                               {/* Start/Resume and Finish Controls clearly separated at the bottom */}
                               <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 border-t border-glass-border/60 pt-3">
                                 <div>
-                                  {t.status !== "done" && (
-                                    t.status === "active" ? (
+                                  {t.status !== "done" &&
+                                    (t.status === "active" ? (
                                       <Button
                                         size="sm"
                                         onClick={(e) => {
@@ -500,15 +746,19 @@ function ExecutePage() {
                                           e.stopPropagation();
                                           update((s) => ({
                                             ...startTask(s, t.id),
-                                            interruptedTaskId: s.interruptedTaskId === t.id ? null : s.interruptedTaskId,
+                                            interruptedTaskId:
+                                              s.interruptedTaskId === t.id
+                                                ? null
+                                                : s.interruptedTaskId,
                                           }));
                                         }}
                                       >
                                         <Play className="h-3.5 w-3.5" />
-                                        {t.status === "paused" ? "Resume Task" : "Start Task"}
+                                        {t.status === "paused"
+                                          ? "Resume Task"
+                                          : "Start Task"}
                                       </Button>
-                                    )
-                                  )}
+                                    ))}
                                 </div>
 
                                 {t.status !== "done" && (
@@ -550,12 +800,17 @@ function ExecutePage() {
       />
 
       {/* Emergency Switch Modal (Preserved) */}
-      <Modal open={emergency} onClose={() => setEmergency(false)} title="Emergency Switch">
+      <Modal
+        open={emergency}
+        onClose={() => setEmergency(false)}
+        title="Emergency Switch"
+      >
         <p className="text-sm text-muted-foreground">
           {interrupted ? (
             <>
-              Paused <b className="text-foreground">{interrupted.title}</b> at {fmtTime(interrupted.elapsedMs)}. Its time
-              and output are preserved.
+              Paused <b className="text-foreground">{interrupted.title}</b> at{" "}
+              {fmtTime(interrupted.elapsedMs)}. Its time and output are
+              preserved.
             </>
           ) : (
             "No task was running."
@@ -577,19 +832,65 @@ function ExecutePage() {
               >
                 <span>
                   #{t.priorityId} {t.title}
-                  {t.id === interrupted?.id && <Badge className="ml-2">Interrupted</Badge>}
+                  {t.id === interrupted?.id && (
+                    <Badge className="ml-2">Interrupted</Badge>
+                  )}
                 </span>
-                <span className="text-xs text-muted-foreground">{fmtMin(t.duration)}</span>
+                <span className="text-xs text-muted-foreground">
+                  {fmtMin(t.duration)}
+                </span>
               </button>
             ))}
         </div>
         <div className="mt-5 flex justify-end">
-          <Button onClick={() => setEmergency(false)}>Handle outside the plan</Button>
+          <Button onClick={() => setEmergency(false)}>
+            Handle outside the plan
+          </Button>
         </div>
       </Modal>
 
       {/* Closeout Dialog (Preserved) */}
       <CloseoutDialog open={closeout} onClose={() => setCloseout(false)} />
+
+      {/* Knowledge Modals for Focused Reference & Linking */}
+      {viewingKnowledge && (
+        <KnowledgeViewerModal
+          open={!!viewingKnowledge}
+          onClose={() => setViewingKnowledge(null)}
+          items={viewingKnowledge}
+          title="Contextual Knowledge Reference"
+        />
+      )}
+
+      {linkingKnowledgeTaskId !== null && (
+        <KnowledgeSelectModal
+          open={linkingKnowledgeTaskId !== null}
+          onClose={() => setLinkingKnowledgeTaskId(null)}
+          selectedIds={
+            state.plan?.tasks.find((t) => t.id === linkingKnowledgeTaskId)
+              ?.knowledgeIds || []
+          }
+          onSelect={(ids) => {
+            update((s) => {
+              if (!s.plan) return s;
+              return {
+                ...s,
+                plan: {
+                  ...s.plan,
+                  tasks: s.plan.tasks.map((t) =>
+                    t.id === linkingKnowledgeTaskId
+                      ? { ...t, knowledgeIds: ids }
+                      : t,
+                  ),
+                },
+              };
+            });
+            toast.success("Knowledge linked to active task");
+          }}
+          title="Link Knowledge to Active Task"
+          subtitle="Associate a method (steps), principle (rule), or framework to guide execution."
+        />
+      )}
     </div>
   );
 }
@@ -631,7 +932,9 @@ function FinishDialog({
     const finalOutput: Record<string, string> = { ...o };
     if (priId === 2 && p2Workstream) {
       finalOutput["Workstream"] =
-        p2Workstream === "A" ? "Cashflow / System Research" : "Fintech Product Capability";
+        p2Workstream === "A"
+          ? "Cashflow / System Research"
+          : "Fintech Product Capability";
     }
     onSave(finalOutput, ach);
   };
@@ -645,8 +948,8 @@ function FinishDialog({
             {priId === 1
               ? "Founder Capability — Product building, validation, sales & execution"
               : priId === 2
-              ? "Cashflow Infrastructure — Workstream classification required"
-              : "Learning for Execution — Lightweight capture"}
+                ? "Cashflow Infrastructure — Workstream classification required"
+                : "Learning for Execution — Lightweight capture"}
           </span>
         </div>
 
@@ -659,7 +962,9 @@ function FinishDialog({
                 rows={2}
                 placeholder="What was built, shipped, or delivered?"
                 value={o["Actual output"] ?? ""}
-                onChange={(e) => setO({ ...o, "Actual output": e.target.value })}
+                onChange={(e) =>
+                  setO({ ...o, "Actual output": e.target.value })
+                }
               />
             </div>
             <div>
@@ -667,7 +972,9 @@ function FinishDialog({
               <Input
                 placeholder="e.g. 3 conversations, 1 deployment, 5 signups"
                 value={o["Metric values"] ?? ""}
-                onChange={(e) => setO({ ...o, "Metric values": e.target.value })}
+                onChange={(e) =>
+                  setO({ ...o, "Metric values": e.target.value })
+                }
               />
             </div>
             <div>
@@ -676,7 +983,9 @@ function FinishDialog({
                 rows={2}
                 placeholder="Key user feedback, blockers, or evidence gathered..."
                 value={o["Notes & observations"] ?? ""}
-                onChange={(e) => setO({ ...o, "Notes & observations": e.target.value })}
+                onChange={(e) =>
+                  setO({ ...o, "Notes & observations": e.target.value })
+                }
               />
             </div>
             <div>
@@ -708,15 +1017,18 @@ function FinishDialog({
                     "rounded-2xl border p-4 text-left transition",
                     p2Workstream === "A"
                       ? "border-primary bg-primary/15 shadow-sm ring-1 ring-primary/40 glow"
-                      : "border-glass-border bg-secondary/30 hover:bg-secondary/50"
+                      : "border-glass-border bg-secondary/30 hover:bg-secondary/50",
                   )}
                 >
                   <div className="flex items-center gap-2">
                     <Activity className="h-4 w-4 text-cyan" />
-                    <span className="font-semibold text-sm">A — Cashflow / System Research</span>
+                    <span className="font-semibold text-sm">
+                      A — Cashflow / System Research
+                    </span>
                   </div>
                   <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-                    Record work involving the existing LBES system, strategy research, simulation context, or financial tracking.
+                    Record work involving the existing LBES system, strategy
+                    research, simulation context, or financial tracking.
                   </p>
                 </button>
 
@@ -730,15 +1042,18 @@ function FinishDialog({
                     "rounded-2xl border p-4 text-left transition",
                     p2Workstream === "B"
                       ? "border-primary bg-primary/15 shadow-sm ring-1 ring-primary/40 glow"
-                      : "border-glass-border bg-secondary/30 hover:bg-secondary/50"
+                      : "border-glass-border bg-secondary/30 hover:bg-secondary/50",
                   )}
                 >
                   <div className="flex items-center gap-2">
                     <ShieldCheck className="h-4 w-4 text-cyan" />
-                    <span className="font-semibold text-sm">B — Fintech Product Capability</span>
+                    <span className="font-semibold text-sm">
+                      B — Fintech Product Capability
+                    </span>
                   </div>
                   <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
-                    Develop LBES into a useful fintech product that solves real user problems.
+                    Develop LBES into a useful fintech product that solves real
+                    user problems.
                   </p>
                 </button>
               </div>
@@ -755,7 +1070,9 @@ function FinishDialog({
                   <Input
                     placeholder="e.g. LBES Core, Execution Automation, Rule Engine v2"
                     value={o["System / Strategy name"] ?? ""}
-                    onChange={(e) => setO({ ...o, "System / Strategy name": e.target.value })}
+                    onChange={(e) =>
+                      setO({ ...o, "System / Strategy name": e.target.value })
+                    }
                   />
                 </div>
                 <div>
@@ -763,7 +1080,9 @@ function FinishDialog({
                   <Input
                     placeholder="e.g. Strategy Research, Rule Definition, Backtesting, Execution Review, Automation"
                     value={o["Activity type"] ?? ""}
-                    onChange={(e) => setO({ ...o, "Activity type": e.target.value })}
+                    onChange={(e) =>
+                      setO({ ...o, "Activity type": e.target.value })
+                    }
                   />
                 </div>
                 <div>
@@ -771,7 +1090,12 @@ function FinishDialog({
                   <Input
                     placeholder="e.g. +1.8R, Simulated return +2.4%, 100% rule adherence"
                     value={o["Financial / simulated result"] ?? ""}
-                    onChange={(e) => setO({ ...o, "Financial / simulated result": e.target.value })}
+                    onChange={(e) =>
+                      setO({
+                        ...o,
+                        "Financial / simulated result": e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div>
@@ -780,7 +1104,9 @@ function FinishDialog({
                     rows={2}
                     placeholder="Key observations, charts, screenshots, or rule verification notes..."
                     value={o["Notes & evidence"] ?? ""}
-                    onChange={(e) => setO({ ...o, "Notes & evidence": e.target.value })}
+                    onChange={(e) =>
+                      setO({ ...o, "Notes & evidence": e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -798,7 +1124,9 @@ function FinishDialog({
                     rows={2}
                     placeholder="What product feature or tool was developed/deployed?"
                     value={o["Actual product output"] ?? ""}
-                    onChange={(e) => setO({ ...o, "Actual product output": e.target.value })}
+                    onChange={(e) =>
+                      setO({ ...o, "Actual product output": e.target.value })
+                    }
                   />
                 </div>
                 <div>
@@ -806,7 +1134,9 @@ function FinishDialog({
                   <Input
                     placeholder="What specific user problem does this address?"
                     value={o["Feature or problem"] ?? ""}
-                    onChange={(e) => setO({ ...o, "Feature or problem": e.target.value })}
+                    onChange={(e) =>
+                      setO({ ...o, "Feature or problem": e.target.value })
+                    }
                   />
                 </div>
                 <div>
@@ -814,7 +1144,12 @@ function FinishDialog({
                   <Input
                     placeholder="User reactions, tester feedback, or validation results..."
                     value={o["User feedback / validation"] ?? ""}
-                    onChange={(e) => setO({ ...o, "User feedback / validation": e.target.value })}
+                    onChange={(e) =>
+                      setO({
+                        ...o,
+                        "User feedback / validation": e.target.value,
+                      })
+                    }
                   />
                 </div>
                 <div>
@@ -823,7 +1158,9 @@ function FinishDialog({
                     rows={2}
                     placeholder="Key learnings and next product step..."
                     value={o["Notes & next learning"] ?? ""}
-                    onChange={(e) => setO({ ...o, "Notes & next learning": e.target.value })}
+                    onChange={(e) =>
+                      setO({ ...o, "Notes & next learning": e.target.value })
+                    }
                   />
                 </div>
               </div>
@@ -840,7 +1177,9 @@ function FinishDialog({
                 rows={2}
                 placeholder="What fundamental was learned or applied?"
                 value={o["Actual output"] ?? ""}
-                onChange={(e) => setO({ ...o, "Actual output": e.target.value })}
+                onChange={(e) =>
+                  setO({ ...o, "Actual output": e.target.value })
+                }
               />
             </div>
             <div>
@@ -864,7 +1203,9 @@ function FinishDialog({
               onChange={(e) => setAch(e.target.checked)}
               className="h-4 w-4 rounded accent-primary"
             />
-            <span className="font-medium">This also achieved the priority's approved daily outcome</span>
+            <span className="font-medium">
+              This also achieved the priority's approved daily outcome
+            </span>
           </label>
           <p className="mt-1 text-xs text-muted-foreground ml-6.5">
             Task completion and outcome achievement are tracked separately.
@@ -887,7 +1228,13 @@ function FinishDialog({
   );
 }
 
-function CloseoutDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
+function CloseoutDialog({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
   const { state, update } = useOS();
   const [learning, setLearning] = useState("");
   const nav = useNavigate();
@@ -904,10 +1251,20 @@ function CloseoutDialog({ open, onClose }: { open: boolean; onClose: () => void 
               {p.name}
             </div>
             <div>
-              Planned {fmtMin(rec.plannedMin[p.id])} · Actual {fmtMin(rec.actualMin[p.id])}
+              Planned {fmtMin(rec.plannedMin[p.id])} · Actual{" "}
+              {fmtMin(rec.actualMin[p.id])}
             </div>
-            <div className={rec.outcomesAchieved.includes(p.id) ? "text-success font-medium" : "text-muted-foreground"}>
-              Outcome {rec.outcomesAchieved.includes(p.id) ? "achieved" : "not marked achieved"}
+            <div
+              className={
+                rec.outcomesAchieved.includes(p.id)
+                  ? "text-success font-medium"
+                  : "text-muted-foreground"
+              }
+            >
+              Outcome{" "}
+              {rec.outcomesAchieved.includes(p.id)
+                ? "achieved"
+                : "not marked achieved"}
             </div>
           </div>
         ))}
@@ -919,7 +1276,9 @@ function CloseoutDialog({ open, onClose }: { open: boolean; onClose: () => void 
             {rec.outputs.length ? (
               rec.outputs.map((o, i) => (
                 <li key={i} className="flex flex-wrap items-center gap-1.5">
-                  <span className="font-semibold text-foreground/80">#{o.priorityId} {o.title}:</span>
+                  <span className="font-semibold text-foreground/80">
+                    #{o.priorityId} {o.title}:
+                  </span>
                   {o.workstream && (
                     <span className="rounded bg-cyan/15 px-1.5 py-0.2 text-[10px] font-medium text-cyan">
                       {o.workstream}

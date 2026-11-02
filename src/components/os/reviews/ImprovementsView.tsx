@@ -24,8 +24,26 @@ import {
   updateImprovement,
 } from "@/lib/os/reviews/operations";
 import { calculateImprovementStats } from "@/lib/os/reviews/analytics";
-import type { ImprovementOutcome, ImprovementStatus, PriorityId, ReviewImprovement } from "@/lib/os/types";
-import { Badge, Button, Empty, Glass, Input, Label, Modal, PriorityIcon, Textarea } from "@/components/os/ui";
+import type {
+  ImprovementOutcome,
+  ImprovementStatus,
+  KnowledgeItem,
+  PriorityId,
+  ReviewImprovement,
+} from "@/lib/os/types";
+import {
+  Badge,
+  Button,
+  Empty,
+  Glass,
+  Input,
+  Label,
+  Modal,
+  PriorityIcon,
+  Textarea,
+} from "@/components/os/ui";
+import { KnowledgeEditorModal } from "@/components/os/KnowledgeEditorModal";
+import { today, uid } from "@/lib/os/seed";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
@@ -37,8 +55,10 @@ export function ImprovementsView() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const [decisionModalTarget, setDecisionModalTarget] = useState<ReviewImprovement | null>(null);
-  const [evalModalTarget, setEvalModalTarget] = useState<ReviewImprovement | null>(null);
+  const [decisionModalTarget, setDecisionModalTarget] =
+    useState<ReviewImprovement | null>(null);
+  const [evalModalTarget, setEvalModalTarget] =
+    useState<ReviewImprovement | null>(null);
 
   // Form states for creation
   const [prob, setProb] = useState("");
@@ -52,7 +72,8 @@ export function ImprovementsView() {
   const [decisionNotes, setDecisionNotes] = useState("");
 
   // Form states for evaluation
-  const [evalOutcome, setEvalOutcome] = useState<ImprovementOutcome>("succeeded");
+  const [evalOutcome, setEvalOutcome] =
+    useState<ImprovementOutcome>("succeeded");
   const [evalNotes, setEvalNotes] = useState("");
 
   const improvements = useMemo(() => {
@@ -68,7 +89,8 @@ export function ImprovementsView() {
       if (statusFilter !== "all" && imp.status !== statusFilter) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const searchScope = `${imp.problemStatement} ${imp.recommendation} ${imp.approvedAction ?? ""}`.toLowerCase();
+        const searchScope =
+          `${imp.problemStatement} ${imp.recommendation} ${imp.approvedAction ?? ""}`.toLowerCase();
         if (!searchScope.includes(q)) return false;
       }
       return true;
@@ -89,7 +111,10 @@ export function ImprovementsView() {
         priorityId: prioId,
         problemStatement: prob.trim(),
         evidence: {
-          metrics: evidenceMetrics.split(",").map((m) => m.trim()).filter(Boolean),
+          metrics: evidenceMetrics
+            .split(",")
+            .map((m) => m.trim())
+            .filter(Boolean),
           dayDates: [todayIso],
         },
         recommendation: rec.trim(),
@@ -113,7 +138,8 @@ export function ImprovementsView() {
       update((s) =>
         updateImprovement(s, decisionModalTarget.id, {
           status: "approved",
-          approvedAction: approvedAct.trim() || decisionModalTarget.recommendation,
+          approvedAction:
+            approvedAct.trim() || decisionModalTarget.recommendation,
           decisionNote: decisionNotes.trim() || undefined,
         }),
       );
@@ -149,9 +175,58 @@ export function ImprovementsView() {
     setEvalNotes("");
   };
 
-  const handlePromoteToKnowledge = (impId: string) => {
-    update((s) => promoteImprovementToKnowledge(s, impId));
-    toast.success("Learning promoted to Knowledge registry.");
+  const [promotingImp, setPromotingImp] = useState<ReviewImprovement | null>(
+    null,
+  );
+
+  const proposedKnowledgeItem = useMemo((): KnowledgeItem | null => {
+    if (!promotingImp) return null;
+    const actionText =
+      promotingImp.approvedAction || promotingImp.recommendation || "";
+    const isStepMethod =
+      actionText.toLowerCase().includes("step") ||
+      actionText.toLowerCase().includes("process");
+    const format = isStepMethod ? "method" : "principle";
+
+    return {
+      id: `k-imp-${uid()}`,
+      title: `Lesson: ${promotingImp.problemStatement.slice(0, 60)}`,
+      type: "Learning",
+      knowledgeFormat: format,
+      formatData: {
+        principle: {
+          corePrinciple: actionText,
+          whyItMatters: promotingImp.problemStatement,
+          whenToApply: promotingImp.periodRef
+            ? `During ${promotingImp.periodRef} review cycles`
+            : undefined,
+        },
+        method: {
+          purpose: promotingImp.problemStatement,
+          steps: [actionText],
+          expectedResult:
+            promotingImp.expectedResult || promotingImp.evaluationNotes,
+        },
+        custom: {
+          content: `Problem: ${promotingImp.problemStatement}\nRecommendation: ${promotingImp.recommendation}\nApproved Action: ${actionText}\nEvaluation Result: ${promotingImp.evaluationNotes || "Validated"}`,
+        },
+      },
+      body: `Problem: ${promotingImp.problemStatement}\n\nEvidence: ${(promotingImp.evidence.metrics || []).join("; ")}\n\nApproved Action: ${actionText}\n\nEvaluation Result (${promotingImp.evaluationOutcome || "completed"}): ${promotingImp.evaluationNotes || "Validated through execution."}`,
+      priorityId: promotingImp.priorityId,
+      projectId: promotingImp.projectId,
+      tags: `improvement, review, ${promotingImp.periodRef}`,
+      createdAt: today(),
+      schemaVersion: 1,
+    };
+  }, [promotingImp]);
+
+  const handleConfirmPromote = (saved: KnowledgeItem) => {
+    if (!promotingImp) return;
+    update((s) =>
+      promoteImprovementToKnowledge(s, promotingImp.id, saved.createdAt, saved),
+    );
+    toast.success("Learning promoted to Yash OS Knowledge registry.");
+    setPromotingImp(null);
   };
 
   return (
@@ -159,9 +234,12 @@ export function ImprovementsView() {
       {/* Header Banner */}
       <Glass className="p-4 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold font-display">Improvement Intelligence Loop</h2>
+          <h2 className="text-xl font-bold font-display">
+            Improvement Intelligence Loop
+          </h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Problem → Evidence → Recommendation → Decision → Approved Action → Evaluation → Learning
+            Problem → Evidence → Recommendation → Decision → Approved Action →
+            Evaluation → Learning
           </p>
         </div>
 
@@ -178,44 +256,66 @@ export function ImprovementsView() {
       {/* KPI Stats Ribbon */}
       <div className="grid gap-4 sm:grid-cols-4">
         <div className="rounded-2xl border border-glass-border bg-secondary/30 p-4">
-          <div className="text-xs text-muted-foreground">Proposed (Pending)</div>
-          <div className="font-display text-2xl font-bold mt-1 text-cyan">{stats.proposed}</div>
-          <div className="text-[11px] text-muted-foreground mt-1">Awaiting decision</div>
+          <div className="text-xs text-muted-foreground">
+            Proposed (Pending)
+          </div>
+          <div className="font-display text-2xl font-bold mt-1 text-cyan">
+            {stats.proposed}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            Awaiting decision
+          </div>
         </div>
         <div className="rounded-2xl border border-glass-border bg-secondary/30 p-4">
           <div className="text-xs text-muted-foreground">Approved / Active</div>
-          <div className="font-display text-2xl font-bold mt-1 text-primary">{stats.approved}</div>
-          <div className="text-[11px] text-muted-foreground mt-1">Actions in progress</div>
+          <div className="font-display text-2xl font-bold mt-1 text-primary">
+            {stats.approved}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            Actions in progress
+          </div>
         </div>
         <div className="rounded-2xl border border-glass-border bg-secondary/30 p-4">
           <div className="text-xs text-muted-foreground">Evaluated Actions</div>
-          <div className="font-display text-2xl font-bold mt-1 text-success">{stats.evaluated}</div>
-          <div className="text-[11px] text-muted-foreground mt-1">Execution completed</div>
+          <div className="font-display text-2xl font-bold mt-1 text-success">
+            {stats.evaluated}
+          </div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            Execution completed
+          </div>
         </div>
         <div className="rounded-2xl border border-glass-border bg-secondary/30 p-4">
-          <div className="text-xs text-muted-foreground">Evaluation Success Rate</div>
+          <div className="text-xs text-muted-foreground">
+            Evaluation Success Rate
+          </div>
           <div className="font-display text-2xl font-bold mt-1 text-foreground">
             {stats.successRate}%
           </div>
-          <div className="text-[11px] text-muted-foreground mt-1">Empirical effectiveness</div>
+          <div className="text-[11px] text-muted-foreground mt-1">
+            Empirical effectiveness
+          </div>
         </div>
       </div>
 
       {/* Filter Bar */}
       <Glass className="p-3.5 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex flex-wrap items-center gap-2">
-          {["all", "proposed", "approved", "evaluated", "rejected"].map((st) => (
-            <button
-              key={st}
-              onClick={() => setStatusFilter(st)}
-              className={cn(
-                "px-3 py-1 rounded-md text-xs font-medium capitalize transition-all",
-                statusFilter === st ? "bg-primary text-primary-foreground glow" : "text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {st}
-            </button>
-          ))}
+          {["all", "proposed", "approved", "evaluated", "rejected"].map(
+            (st) => (
+              <button
+                key={st}
+                onClick={() => setStatusFilter(st)}
+                className={cn(
+                  "px-3 py-1 rounded-md text-xs font-medium capitalize transition-all",
+                  statusFilter === st
+                    ? "bg-primary text-primary-foreground glow"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {st}
+              </button>
+            ),
+          )}
         </div>
 
         <div className="relative">
@@ -245,11 +345,19 @@ export function ImprovementsView() {
             const isEvaluated = imp.status === "evaluated";
 
             return (
-              <Glass key={imp.id} className="p-5 space-y-3 transition-all hover:bg-secondary/40">
+              <Glass
+                key={imp.id}
+                className="p-5 space-y-3 transition-all hover:bg-secondary/40"
+              >
                 {/* Stage Header */}
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
-                    {imp.priorityId && <PriorityIcon id={imp.priorityId} className="h-8 w-8 mt-0.5" />}
+                    {imp.priorityId && (
+                      <PriorityIcon
+                        id={imp.priorityId}
+                        className="h-8 w-8 mt-0.5"
+                      />
+                    )}
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-base text-foreground">
@@ -261,17 +369,18 @@ export function ImprovementsView() {
                             isProposed
                               ? "border-cyan/30 text-cyan bg-cyan/10"
                               : isApproved
-                              ? "border-primary/30 text-primary bg-primary/10"
-                              : isEvaluated
-                              ? "border-success/30 text-success bg-success/10"
-                              : "text-muted-foreground",
+                                ? "border-primary/30 text-primary bg-primary/10"
+                                : isEvaluated
+                                  ? "border-success/30 text-success bg-success/10"
+                                  : "text-muted-foreground",
                           )}
                         >
                           {imp.status}
                         </Badge>
                       </div>
                       <div className="text-xs text-muted-foreground mt-1">
-                        Period Ref: {imp.periodRef} · Created: {new Date(imp.createdAt).toLocaleDateString()}
+                        Period Ref: {imp.periodRef} · Created:{" "}
+                        {new Date(imp.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                   </div>
@@ -308,9 +417,10 @@ export function ImprovementsView() {
                         variant="glass"
                         size="sm"
                         className="text-xs text-violet hover:bg-violet/10"
-                        onClick={() => handlePromoteToKnowledge(imp.id)}
+                        onClick={() => setPromotingImp(imp)}
                       >
-                        <BookMarked className="h-3.5 w-3.5 mr-1" /> Promote to Knowledge
+                        <BookMarked className="h-3.5 w-3.5 mr-1" /> Promote to
+                        Knowledge
                       </Button>
                     )}
 
@@ -329,7 +439,9 @@ export function ImprovementsView() {
                       <Sparkles className="h-3.5 w-3.5 text-cyan" />
                       Recommendation
                     </span>
-                    <p className="text-muted-foreground leading-relaxed">{imp.recommendation}</p>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {imp.recommendation}
+                    </p>
                     {imp.expectedResult && (
                       <div className="text-[11px] text-cyan pt-1">
                         Expected Outcome: {imp.expectedResult}
@@ -338,7 +450,9 @@ export function ImprovementsView() {
                   </div>
 
                   <div className="rounded-xl bg-secondary/30 p-3 space-y-1">
-                    <span className="font-semibold text-foreground">Evidence Basis</span>
+                    <span className="font-semibold text-foreground">
+                      Evidence Basis
+                    </span>
                     <ul className="text-muted-foreground space-y-0.5">
                       {imp.evidence.metrics.map((m, idx) => (
                         <li key={idx}>· {m}</li>
@@ -352,13 +466,19 @@ export function ImprovementsView() {
                   <div className="rounded-2xl border border-glass-border bg-secondary/20 p-3.5 text-xs space-y-1.5">
                     {imp.approvedAction && (
                       <div>
-                        <span className="font-semibold text-foreground">Approved Action: </span>
-                        <span className="text-muted-foreground">{imp.approvedAction}</span>
+                        <span className="font-semibold text-foreground">
+                          Approved Action:{" "}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {imp.approvedAction}
+                        </span>
                       </div>
                     )}
                     {imp.evaluationOutcome && (
                       <div className="flex items-center gap-2 pt-1">
-                        <span className="font-semibold text-foreground">Evaluation Result:</span>
+                        <span className="font-semibold text-foreground">
+                          Evaluation Result:
+                        </span>
                         <Badge
                           className={cn(
                             "capitalize text-[11px]",
@@ -370,7 +490,9 @@ export function ImprovementsView() {
                           {imp.evaluationOutcome.replace("_", " ")}
                         </Badge>
                         {imp.evaluationNotes && (
-                          <span className="text-muted-foreground italic">"{imp.evaluationNotes}"</span>
+                          <span className="text-muted-foreground italic">
+                            "{imp.evaluationNotes}"
+                          </span>
                         )}
                       </div>
                     )}
@@ -384,7 +506,11 @@ export function ImprovementsView() {
 
       {/* Propose Modal */}
       {createModalOpen && (
-        <Modal open onClose={() => setCreateModalOpen(false)} title="Propose Improvement">
+        <Modal
+          open
+          onClose={() => setCreateModalOpen(false)}
+          title="Propose Improvement"
+        >
           <div className="space-y-4 text-xs">
             <div>
               <Label>Problem Statement</Label>
@@ -401,12 +527,20 @@ export function ImprovementsView() {
                 <Label>Priority</Label>
                 <select
                   value={prioId}
-                  onChange={(e) => setPrioId(parseInt(e.target.value, 10) as PriorityId)}
+                  onChange={(e) =>
+                    setPrioId(parseInt(e.target.value, 10) as PriorityId)
+                  }
                   className="w-full h-10 rounded-xl border border-input bg-secondary/60 px-3 text-sm text-foreground outline-none"
                 >
-                  <option value={1} className="bg-popover">#1 Founder Capability</option>
-                  <option value={2} className="bg-popover">#2 Cashflow Infrastructure</option>
-                  <option value={3} className="bg-popover">#3 Learning for Execution</option>
+                  <option value={1} className="bg-popover">
+                    #1 Founder Capability
+                  </option>
+                  <option value={2} className="bg-popover">
+                    #2 Cashflow Infrastructure
+                  </option>
+                  <option value={3} className="bg-popover">
+                    #3 Learning for Execution
+                  </option>
                 </select>
               </div>
 
@@ -459,7 +593,9 @@ export function ImprovementsView() {
           <div className="space-y-4 text-xs">
             <div className="rounded-xl bg-secondary/30 p-3">
               <span className="text-muted-foreground">Problem:</span>
-              <div className="font-semibold text-sm mt-0.5">{decisionModalTarget.problemStatement}</div>
+              <div className="font-semibold text-sm mt-0.5">
+                {decisionModalTarget.problemStatement}
+              </div>
             </div>
 
             <div>
@@ -482,12 +618,20 @@ export function ImprovementsView() {
           </div>
 
           <div className="mt-6 flex justify-between gap-2">
-            <Button variant="danger" onClick={() => handleSaveDecision("reject")}>
+            <Button
+              variant="danger"
+              onClick={() => handleSaveDecision("reject")}
+            >
               Reject
             </Button>
             <div className="flex gap-2">
-              <Button onClick={() => setDecisionModalTarget(null)}>Cancel</Button>
-              <Button variant="primary" onClick={() => handleSaveDecision("approve")}>
+              <Button onClick={() => setDecisionModalTarget(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => handleSaveDecision("approve")}
+              >
                 <Check className="h-4 w-4" /> Approve Action
               </Button>
             </div>
@@ -506,7 +650,8 @@ export function ImprovementsView() {
             <div className="rounded-xl bg-secondary/30 p-3">
               <span className="text-muted-foreground">Action:</span>
               <div className="font-semibold text-sm mt-0.5">
-                {evalModalTarget.approvedAction || evalModalTarget.recommendation}
+                {evalModalTarget.approvedAction ||
+                  evalModalTarget.recommendation}
               </div>
             </div>
 
@@ -514,13 +659,23 @@ export function ImprovementsView() {
               <Label>Outcome Evaluation</Label>
               <select
                 value={evalOutcome}
-                onChange={(e) => setEvalOutcome(e.target.value as ImprovementOutcome)}
+                onChange={(e) =>
+                  setEvalOutcome(e.target.value as ImprovementOutcome)
+                }
                 className="w-full h-10 rounded-xl border border-input bg-secondary/60 px-3 text-sm text-foreground outline-none"
               >
-                <option value="succeeded" className="bg-popover">Succeeded (Achieved expected result)</option>
-                <option value="partially_succeeded" className="bg-popover">Partially Succeeded</option>
-                <option value="failed" className="bg-popover">Failed (Did not resolve issue)</option>
-                <option value="untested" className="bg-popover">Untested / Inconclusive</option>
+                <option value="succeeded" className="bg-popover">
+                  Succeeded (Achieved expected result)
+                </option>
+                <option value="partially_succeeded" className="bg-popover">
+                  Partially Succeeded
+                </option>
+                <option value="failed" className="bg-popover">
+                  Failed (Did not resolve issue)
+                </option>
+                <option value="untested" className="bg-popover">
+                  Untested / Inconclusive
+                </option>
               </select>
             </div>
 
@@ -542,6 +697,18 @@ export function ImprovementsView() {
             </Button>
           </div>
         </Modal>
+      )}
+
+      {/* Promotion to Knowledge Modal with Format Classification & Confirmation */}
+      {proposedKnowledgeItem && (
+        <KnowledgeEditorModal
+          open={!!proposedKnowledgeItem}
+          onClose={() => setPromotingImp(null)}
+          item={proposedKnowledgeItem}
+          onSave={handleConfirmPromote}
+          titleOverride="Promote Learning to Yash OS Knowledge"
+          confirmLabel="Confirm & Promote to Knowledge"
+        />
       )}
     </div>
   );

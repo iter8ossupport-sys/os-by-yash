@@ -32,7 +32,8 @@ export interface DaySummaryMetrics {
   outcomesAchieved: number;
   outcomesRate: number; // 0 to 100
   realismRatio: number; // actual / planned
-  realismCategory: "under_allocated" | "calibrated" | "over_extended" | "no_plan";
+  realismCategory:
+    "under_allocated" | "calibrated" | "over_extended" | "no_plan";
   state: "live" | "finalized" | "corrected";
   source: "closeout" | "manual" | "corrected";
   hasAuditCorrection: boolean;
@@ -63,19 +64,33 @@ export function calculateDaySummary(day: DayRecord): DaySummaryMetrics {
     actualMinByPriority[id] = day.actualMin?.[id] ?? 0;
   });
 
-  const totalPlannedMin = Object.values(plannedMinByPriority).reduce((a, b) => a + b, 0);
-  const totalActualMin = Object.values(actualMinByPriority).reduce((a, b) => a + b, 0);
+  const totalPlannedMin = Object.values(plannedMinByPriority).reduce(
+    (a, b) => a + b,
+    0,
+  );
+  const totalActualMin = Object.values(actualMinByPriority).reduce(
+    (a, b) => a + b,
+    0,
+  );
 
-  const priorityDistributionPercent: Record<PriorityId, number> = { 1: 0, 2: 0, 3: 0 };
+  const priorityDistributionPercent: Record<PriorityId, number> = {
+    1: 0,
+    2: 0,
+    3: 0,
+  };
   ALL_PRIORITIES.forEach((id) => {
     priorityDistributionPercent[id] =
-      totalActualMin > 0 ? Math.round((actualMinByPriority[id] / totalActualMin) * 100) : 0;
+      totalActualMin > 0
+        ? Math.round((actualMinByPriority[id] / totalActualMin) * 100)
+        : 0;
   });
 
   const tasksPlanned = day.tasksPlanned ?? 0;
   const tasksDone = day.tasksDone ?? 0;
   const taskCompletionRate =
-    tasksPlanned > 0 ? Math.min(100, Math.round((tasksDone / tasksPlanned) * 100)) : 0;
+    tasksPlanned > 0
+      ? Math.min(100, Math.round((tasksDone / tasksPlanned) * 100))
+      : 0;
 
   // Priority 2 Workstream A / B calculations
   let workstreamA = day.p2WorkstreamMinutes?.workstreamA ?? 0;
@@ -84,8 +99,16 @@ export function calculateDaySummary(day: DayRecord): DaySummaryMetrics {
   // Fallback: If p2WorkstreamMinutes wasn't explicitly populated, infer from outputs
   if (workstreamA === 0 && workstreamB === 0 && actualMinByPriority[2] > 0) {
     const p2Outputs = (day.outputs ?? []).filter((o) => o.priorityId === 2);
-    const hasA = p2Outputs.some((o) => o.workstream === "A" || /cash|trading|session/i.test(o.workstream ?? ""));
-    const hasB = p2Outputs.some((o) => o.workstream === "B" || /fintech|product|saas|api/i.test(o.workstream ?? ""));
+    const hasA = p2Outputs.some(
+      (o) =>
+        o.workstream === "A" ||
+        /cash|trading|session/i.test(o.workstream ?? ""),
+    );
+    const hasB = p2Outputs.some(
+      (o) =>
+        o.workstream === "B" ||
+        /fintech|product|saas|api/i.test(o.workstream ?? ""),
+    );
 
     if (hasA && !hasB) workstreamA = actualMinByPriority[2];
     else if (hasB && !hasA) workstreamB = actualMinByPriority[2];
@@ -100,20 +123,34 @@ export function calculateDaySummary(day: DayRecord): DaySummaryMetrics {
 
   const totalP2Workstream = workstreamA + workstreamB;
   const p2WorkstreamPercent = {
-    workstreamA: totalP2Workstream > 0 ? Math.round((workstreamA / totalP2Workstream) * 100) : 0,
-    workstreamB: totalP2Workstream > 0 ? Math.round((workstreamB / totalP2Workstream) * 100) : 0,
+    workstreamA:
+      totalP2Workstream > 0
+        ? Math.round((workstreamA / totalP2Workstream) * 100)
+        : 0,
+    workstreamB:
+      totalP2Workstream > 0
+        ? Math.round((workstreamB / totalP2Workstream) * 100)
+        : 0,
   };
 
   // Outcome Intelligence (Never conflated with activity time)
   // Outcomes planned: active priorities that had planned minutes > 0
-  const plannedPrioritiesCount = ALL_PRIORITIES.filter((id) => plannedMinByPriority[id] > 0).length;
-  const outcomesPlanned = plannedPrioritiesCount > 0 ? plannedPrioritiesCount : 3;
+  const plannedPrioritiesCount = ALL_PRIORITIES.filter(
+    (id) => plannedMinByPriority[id] > 0,
+  ).length;
+  const outcomesPlanned =
+    plannedPrioritiesCount > 0 ? plannedPrioritiesCount : 3;
   const outcomesAchieved = (day.outcomesAchieved ?? []).length;
-  const outcomesRate = Math.min(100, Math.round((outcomesAchieved / outcomesPlanned) * 100));
+  const outcomesRate = Math.min(
+    100,
+    Math.round((outcomesAchieved / outcomesPlanned) * 100),
+  );
 
   // Plan Realism Factor
   const realismRatio =
-    totalPlannedMin > 0 ? Math.round((totalActualMin / totalPlannedMin) * 100) / 100 : 0;
+    totalPlannedMin > 0
+      ? Math.round((totalActualMin / totalPlannedMin) * 100) / 100
+      : 0;
   let realismCategory: DaySummaryMetrics["realismCategory"] = "no_plan";
   if (totalPlannedMin > 0) {
     if (realismRatio < 0.85) realismCategory = "under_allocated";
@@ -121,9 +158,13 @@ export function calculateDaySummary(day: DayRecord): DaySummaryMetrics {
     else realismCategory = "over_extended";
   }
 
-  const state = day.state ?? (day.auditHistory?.length ? "corrected" : "finalized");
-  const source = day.source ?? (day.auditHistory?.length ? "corrected" : "closeout");
-  const hasAuditCorrection = Boolean(day.auditHistory && day.auditHistory.length > 0);
+  const state =
+    day.state ?? (day.auditHistory?.length ? "corrected" : "finalized");
+  const source =
+    day.source ?? (day.auditHistory?.length ? "corrected" : "closeout");
+  const hasAuditCorrection = Boolean(
+    day.auditHistory && day.auditHistory.length > 0,
+  );
 
   return {
     date: day.date,
@@ -169,8 +210,15 @@ export function calculatePeriodSummary(
   const daysIncluded = records.map((r) => r.date);
 
   const hoursByPriority: Record<PriorityId, number> = { 1: 0, 2: 0, 3: 0 };
-  const plannedHoursByPriority: Record<PriorityId, number> = { 1: 0, 2: 0, 3: 0 };
-  const outcomesByPriority: Record<PriorityId, { planned: number; achieved: number }> = {
+  const plannedHoursByPriority: Record<PriorityId, number> = {
+    1: 0,
+    2: 0,
+    3: 0,
+  };
+  const outcomesByPriority: Record<
+    PriorityId,
+    { planned: number; achieved: number }
+  > = {
     1: { planned: 0, achieved: 0 },
     2: { planned: 0, achieved: 0 },
     3: { planned: 0, achieved: 0 },
@@ -186,7 +234,10 @@ export function calculatePeriodSummary(
   let p2OutputsWorkstreamA = 0;
   let p2OutputsWorkstreamB = 0;
 
-  const repeatedTaskMap: Record<string, { count: number; priorityId: PriorityId }> = {};
+  const repeatedTaskMap: Record<
+    string,
+    { count: number; priorityId: PriorityId }
+  > = {};
   const keyOutputs: ReviewPeriodSummary["keyOutputs"] = [];
   const learningsSummary: ReviewPeriodSummary["learningsSummary"] = [];
 
@@ -199,7 +250,8 @@ export function calculatePeriodSummary(
     tasksDoneTotal += summary.tasksDone;
 
     ALL_PRIORITIES.forEach((priId) => {
-      hoursByPriority[priId] += Math.round((summary.actualMinByPriority[priId] / 60) * 10) / 10;
+      hoursByPriority[priId] +=
+        Math.round((summary.actualMinByPriority[priId] / 60) * 10) / 10;
       plannedHoursByPriority[priId] +=
         Math.round((summary.plannedMinByPriority[priId] / 60) * 10) / 10;
 
@@ -225,9 +277,15 @@ export function calculatePeriodSummary(
       });
 
       if (out.priorityId === 2) {
-        if (out.workstream === "A" || /cash|trading|session/i.test(out.workstream ?? "")) {
+        if (
+          out.workstream === "A" ||
+          /cash|trading|session/i.test(out.workstream ?? "")
+        ) {
           p2OutputsWorkstreamA += 1;
-        } else if (out.workstream === "B" || /fintech|product|saas|api/i.test(out.workstream ?? "")) {
+        } else if (
+          out.workstream === "B" ||
+          /fintech|product|saas|api/i.test(out.workstream ?? "")
+        ) {
           p2OutputsWorkstreamB += 1;
         }
       }
@@ -264,17 +322,27 @@ export function calculatePeriodSummary(
   );
   const outcomesRate =
     outcomesPlannedTotal > 0
-      ? Math.min(100, Math.round((outcomesAchievedTotal / outcomesPlannedTotal) * 100))
+      ? Math.min(
+          100,
+          Math.round((outcomesAchievedTotal / outcomesPlannedTotal) * 100),
+        )
       : 0;
 
   const repeatedUnfinishedTasks = Object.entries(repeatedTaskMap)
     .filter(([, data]) => data.count >= 1)
-    .map(([title, data]) => ({ title, count: data.count, priorityId: data.priorityId }))
+    .map(([title, data]) => ({
+      title,
+      count: data.count,
+      priorityId: data.priorityId,
+    }))
     .sort((a, b) => b.count - a.count);
 
   const startMs = new Date(startDate).getTime();
   const endMs = new Date(endDate).getTime();
-  const expectedDaysCount = Math.max(1, Math.round((endMs - startMs) / 864e5) + 1);
+  const expectedDaysCount = Math.max(
+    1,
+    Math.round((endMs - startMs) / 864e5) + 1,
+  );
   const missingDaysCount = Math.max(0, expectedDaysCount - daysIncluded.length);
 
   return {
@@ -335,7 +403,8 @@ export function getISOWeekRange(dateInput: Date | string): {
   if (target.getDay() !== 4) {
     target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7));
   }
-  const weekNumber = 1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
+  const weekNumber =
+    1 + Math.ceil((firstThursday - target.valueOf()) / 604800000);
   const year = mon.getFullYear();
 
   const toIso = (date: Date) => date.toISOString().slice(0, 10);
@@ -375,25 +444,38 @@ export function calculatePeriodComparison(
   current: ReviewPeriodSummary,
   previous: ReviewPeriodSummary,
 ): PeriodComparisonResult {
-  const totalHoursDelta = Math.round((current.totalActualHours - previous.totalActualHours) * 10) / 10;
+  const totalHoursDelta =
+    Math.round((current.totalActualHours - previous.totalActualHours) * 10) /
+    10;
   const totalHoursDeltaPercent =
     previous.totalActualHours > 0
-      ? Math.round(((current.totalActualHours - previous.totalActualHours) / previous.totalActualHours) * 100)
+      ? Math.round(
+          ((current.totalActualHours - previous.totalActualHours) /
+            previous.totalActualHours) *
+            100,
+        )
       : null;
 
-  const taskCompletionRateDelta = current.taskCompletionRate - previous.taskCompletionRate;
+  const taskCompletionRateDelta =
+    current.taskCompletionRate - previous.taskCompletionRate;
   const outcomesRateDelta = current.outcomesRate - previous.outcomesRate;
 
   const priorityHoursDelta: Record<PriorityId, number> = { 1: 0, 2: 0, 3: 0 };
   ALL_PRIORITIES.forEach((id) => {
     priorityHoursDelta[id] =
-      Math.round((current.hoursByPriority[id] - previous.hoursByPriority[id]) * 10) / 10;
+      Math.round(
+        (current.hoursByPriority[id] - previous.hoursByPriority[id]) * 10,
+      ) / 10;
   });
 
   const p2WorkstreamADeltaHours =
-    Math.round((current.p2HoursWorkstreamA - previous.p2HoursWorkstreamA) * 10) / 10;
+    Math.round(
+      (current.p2HoursWorkstreamA - previous.p2HoursWorkstreamA) * 10,
+    ) / 10;
   const p2WorkstreamBDeltaHours =
-    Math.round((current.p2HoursWorkstreamB - previous.p2HoursWorkstreamB) * 10) / 10;
+    Math.round(
+      (current.p2HoursWorkstreamB - previous.p2HoursWorkstreamB) * 10,
+    ) / 10;
 
   return {
     currentId: current.id,
@@ -414,8 +496,15 @@ export function calculatePeriodComparison(
 export function detectBottlenecks(
   history: DayRecord[],
   windowDays = 14,
-): { title: string; priorityId: PriorityId; occurrences: number; days: string[] }[] {
-  const cutoff = new Date(Date.now() - windowDays * 864e5).toISOString().slice(0, 10);
+): {
+  title: string;
+  priorityId: PriorityId;
+  occurrences: number;
+  days: string[];
+}[] {
+  const cutoff = new Date(Date.now() - windowDays * 864e5)
+    .toISOString()
+    .slice(0, 10);
   const recent = history.filter((h) => h.date >= cutoff);
 
   const map: Record<string, { priorityId: PriorityId; days: Set<string> }> = {};
@@ -457,7 +546,9 @@ export function calculateMilestoneForecast(
   history: DayRecord[],
   windowDays = 14,
 ): MilestoneForecast {
-  const cutoff = new Date(Date.now() - windowDays * 864e5).toISOString().slice(0, 10);
+  const cutoff = new Date(Date.now() - windowDays * 864e5)
+    .toISOString()
+    .slice(0, 10);
   const sample = history.filter((h) => h.date >= cutoff);
 
   const minThreshold = 3;
@@ -468,9 +559,21 @@ export function calculateMilestoneForecast(
       historicalVelocityHoursPerWeek: 0,
       outcomeSuccessRate: 0,
       scenarios: {
-        conservative: { estimatedCompletionDate: "Insufficient data", weeksRemaining: 0, hoursNeeded: estimatedHoursNeeded },
-        realistic: { estimatedCompletionDate: "Insufficient data", weeksRemaining: 0, hoursNeeded: estimatedHoursNeeded },
-        optimistic: { estimatedCompletionDate: "Insufficient data", weeksRemaining: 0, hoursNeeded: estimatedHoursNeeded },
+        conservative: {
+          estimatedCompletionDate: "Insufficient data",
+          weeksRemaining: 0,
+          hoursNeeded: estimatedHoursNeeded,
+        },
+        realistic: {
+          estimatedCompletionDate: "Insufficient data",
+          weeksRemaining: 0,
+          hoursNeeded: estimatedHoursNeeded,
+        },
+        optimistic: {
+          estimatedCompletionDate: "Insufficient data",
+          weeksRemaining: 0,
+          hoursNeeded: estimatedHoursNeeded,
+        },
       },
       confidenceScore: "Low",
       evidenceBasis: `Requires at least ${minThreshold} closed days in the last ${windowDays} days for deterministic velocity. Currently has ${sample.length} day(s).`,
@@ -486,7 +589,9 @@ export function calculateMilestoneForecast(
   const velocityPerWeek = Math.max(0.5, totalPriHours / weeksInSample);
 
   // Outcome success rate for this priority
-  const daysWithOutcomesPlanned = sample.filter((d) => (d.plannedMin?.[priorityId] ?? 0) > 0).length;
+  const daysWithOutcomesPlanned = sample.filter(
+    (d) => (d.plannedMin?.[priorityId] ?? 0) > 0,
+  ).length;
   const daysWithOutcomesAchieved = sample.filter((d) =>
     (d.outcomesAchieved ?? []).includes(priorityId),
   ).length;
@@ -498,9 +603,15 @@ export function calculateMilestoneForecast(
   // Realistic velocity factoring outcome efficiency
   const effectiveVelocityHoursPerWeek = velocityPerWeek * outcomeSuccessRate;
 
-  const realisticWeeks = Math.max(0.5, Math.ceil((estimatedHoursNeeded / effectiveVelocityHoursPerWeek) * 10) / 10);
+  const realisticWeeks = Math.max(
+    0.5,
+    Math.ceil((estimatedHoursNeeded / effectiveVelocityHoursPerWeek) * 10) / 10,
+  );
   const conservativeWeeks = Math.round(realisticWeeks * 1.35 * 10) / 10;
-  const optimisticWeeks = Math.max(0.2, Math.round(realisticWeeks * 0.75 * 10) / 10);
+  const optimisticWeeks = Math.max(
+    0.2,
+    Math.round(realisticWeeks * 0.75 * 10) / 10,
+  );
 
   const addWeeks = (w: number) => {
     const d = new Date();
@@ -541,18 +652,25 @@ export function calculateMilestoneForecast(
 /**
  * Calculates improvement intelligence lifecycle metrics.
  */
-export function calculateImprovementStats(improvements: ReviewImprovement[] = []) {
+export function calculateImprovementStats(
+  improvements: ReviewImprovement[] = [],
+) {
   const total = improvements.length;
   const proposed = improvements.filter((i) => i.status === "proposed").length;
   const approved = improvements.filter((i) => i.status === "approved").length;
-  const implemented = improvements.filter((i) => i.status === "implemented").length;
+  const implemented = improvements.filter(
+    (i) => i.status === "implemented",
+  ).length;
   const evaluated = improvements.filter((i) => i.status === "evaluated").length;
 
   const evaluatedWithOutcome = improvements.filter(
-    (i) => i.evaluationOutcome === "succeeded" || i.evaluationOutcome === "partially_succeeded",
+    (i) =>
+      i.evaluationOutcome === "succeeded" ||
+      i.evaluationOutcome === "partially_succeeded",
   ).length;
 
-  const successRate = evaluated > 0 ? Math.round((evaluatedWithOutcome / evaluated) * 100) : 0;
+  const successRate =
+    evaluated > 0 ? Math.round((evaluatedWithOutcome / evaluated) * 100) : 0;
 
   return {
     total,
@@ -588,7 +706,11 @@ export function generatePeriodAlerts(
   const gapThreshold = settings?.dataGapDaysThreshold ?? 2;
 
   // 1. Priority 2 Workstream Imbalance Check
-  if (enabled.workstreamImbalance && summary.p2HoursWorkstreamA >= 2.5 && summary.p2HoursWorkstreamB === 0) {
+  if (
+    enabled.workstreamImbalance &&
+    summary.p2HoursWorkstreamA >= 2.5 &&
+    summary.p2HoursWorkstreamB === 0
+  ) {
     alerts.push({
       id: `alt-p2-imbalance-${summary.id}`,
       title: "P2 Workstream Imbalance",
@@ -602,7 +724,9 @@ export function generatePeriodAlerts(
 
   // 2. Chronic Bottleneck Detection
   if (enabled.chronicBottleneck) {
-    const chronic = summary.repeatedUnfinishedTasks.find((t) => t.count >= chronicThreshold);
+    const chronic = summary.repeatedUnfinishedTasks.find(
+      (t) => t.count >= chronicThreshold,
+    );
     if (chronic) {
       alerts.push({
         id: `alt-chronic-${summary.id}`,
@@ -643,7 +767,11 @@ export function generatePeriodAlerts(
   }
 
   // 4. Missing Data Gaps
-  if (enabled.dataGap && (summary.missingDaysCount ?? 0) >= gapThreshold && summary.type === "weekly") {
+  if (
+    enabled.dataGap &&
+    (summary.missingDaysCount ?? 0) >= gapThreshold &&
+    summary.type === "weekly"
+  ) {
     alerts.push({
       id: `alt-gap-${summary.id}`,
       title: "Data Continuity Gap",
@@ -668,7 +796,9 @@ export function evaluateCustomMetric(
   // 1. Numerator resolution
   let numVal = 0;
   if (metric.numerator === "actualHours") {
-    numVal = metric.priorityFilter ? summary.hoursByPriority[metric.priorityFilter] ?? 0 : summary.totalActualHours;
+    numVal = metric.priorityFilter
+      ? (summary.hoursByPriority[metric.priorityFilter] ?? 0)
+      : summary.totalActualHours;
   } else if (metric.numerator === "tasksDone") {
     numVal = summary.tasksDoneTotal;
   } else if (metric.numerator === "outcomesAchieved") {
@@ -682,7 +812,9 @@ export function evaluateCustomMetric(
   // 2. Denominator resolution
   let denVal = 1;
   if (metric.denominator === "plannedHours") {
-    denVal = metric.priorityFilter ? summary.plannedHoursByPriority[metric.priorityFilter] ?? 1 : summary.totalPlannedHours;
+    denVal = metric.priorityFilter
+      ? (summary.plannedHoursByPriority[metric.priorityFilter] ?? 1)
+      : summary.totalPlannedHours;
   } else if (metric.denominator === "tasksPlanned") {
     denVal = summary.tasksPlannedTotal;
   } else if (metric.denominator === "totalActualHours") {
@@ -696,14 +828,22 @@ export function evaluateCustomMetric(
   // 3. Mathematical calculation
   let raw = 0;
   if (metric.formula === "ratio" || metric.formula === "rate") {
-    raw = metric.unit === "%" ? Math.round((numVal / denVal) * 100) : Math.round((numVal / denVal) * 100) / 100;
+    raw =
+      metric.unit === "%"
+        ? Math.round((numVal / denVal) * 100)
+        : Math.round((numVal / denVal) * 100) / 100;
   } else if (metric.formula === "yield_per_hour") {
     raw = Math.round((numVal / Math.max(0.1, denVal)) * 10) / 10;
   } else {
     raw = Math.round((numVal / denVal) * 10) / 10;
   }
 
-  const formatted = metric.unit === "%" ? `${raw}%` : metric.unit === "h" ? `${raw}h` : `${raw}`;
+  const formatted =
+    metric.unit === "%"
+      ? `${raw}%`
+      : metric.unit === "h"
+        ? `${raw}h`
+        : `${raw}`;
   const targetMet = raw >= metric.targetValue;
 
   return { value: raw, formatted, targetMet };
@@ -724,8 +864,8 @@ export function generateDeterministicInsights(
 
   // 1. Empirical Fact: Effort Distribution
   const priHours = summary.hoursByPriority;
-  const maxPri = (Object.keys(priHours) as unknown as PriorityId[]).reduce((a, b) =>
-    priHours[a] > priHours[b] ? a : b,
+  const maxPri = (Object.keys(priHours) as unknown as PriorityId[]).reduce(
+    (a, b) => (priHours[a] > priHours[b] ? a : b),
   );
   const priPct =
     summary.totalActualHours > 0
@@ -775,12 +915,18 @@ export function generateDeterministicInsights(
   // 3. Analytical Insight: Realism & Priority 2 Workstreams
   const realismRatio =
     summary.totalPlannedHours > 0
-      ? Math.round((summary.totalActualHours / summary.totalPlannedHours) * 100) / 100
+      ? Math.round(
+          (summary.totalActualHours / summary.totalPlannedHours) * 100,
+        ) / 100
       : 1;
 
   let realismNote = "Planning capacity was calibrated with reality.";
-  if (realismRatio < 0.85) realismNote = "Execution lagged planned allocation, suggesting over-optimistic task scoping.";
-  else if (realismRatio > 1.15) realismNote = "Actual work took noticeably longer than planned, showing scope expansion.";
+  if (realismRatio < 0.85)
+    realismNote =
+      "Execution lagged planned allocation, suggesting over-optimistic task scoping.";
+  else if (realismRatio > 1.15)
+    realismNote =
+      "Actual work took noticeably longer than planned, showing scope expansion.";
 
   insights.push({
     id: `ins-analytic-p2-${summary.id}`,
@@ -849,7 +995,9 @@ export function calculateProjectPerformance(
 
     // 1. Task Execution Snapshots
     if (day.taskSnapshots && day.taskSnapshots.length > 0) {
-      const projSnapshots = day.taskSnapshots.filter((t) => t.projectId === projectId);
+      const projSnapshots = day.taskSnapshots.filter(
+        (t) => t.projectId === projectId,
+      );
       if (projSnapshots.length > 0) {
         dayHasProject = true;
         projSnapshots.forEach((t) => {
@@ -877,7 +1025,10 @@ export function calculateProjectPerformance(
     });
 
     // Fallback: If no granular task snapshots are logged for this day, but outputs link to this project
-    if ((!day.taskSnapshots || day.taskSnapshots.length === 0) && outputPriId !== undefined) {
+    if (
+      (!day.taskSnapshots || day.taskSnapshots.length === 0) &&
+      outputPriId !== undefined
+    ) {
       totalActualMin += day.actualMin[outputPriId] ?? 0;
       totalPlannedMin += day.plannedMin[outputPriId] ?? 0;
       tasksPlannedTotal += day.tasksPlanned;
@@ -909,5 +1060,3 @@ export function calculateProjectPerformance(
     lastActiveDate: sortedDates[sortedDates.length - 1],
   };
 }
-
-

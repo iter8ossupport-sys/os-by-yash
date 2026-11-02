@@ -21,7 +21,10 @@ import {
 import { useOS } from "@/lib/os/store";
 import { PageHeader, Segmented, Button, Badge } from "@/components/os/ui";
 import { ReviewOverview } from "@/components/os/reviews/ReviewOverview";
-import { AnalyticsHubView, type AnalyticalSubView } from "@/components/os/reviews/AnalyticsHubView";
+import {
+  AnalyticsHubView,
+  type AnalyticalSubView,
+} from "@/components/os/reviews/AnalyticsHubView";
 import { DailyReviewView } from "@/components/os/reviews/DailyReviewView";
 import { WeeklyReviewView } from "@/components/os/reviews/WeeklyReviewView";
 import { MonthlyReviewView } from "@/components/os/reviews/MonthlyReviewView";
@@ -55,7 +58,10 @@ export const Route = createFileRoute("/reviews")({
           "Evidence-based performance & improvement intelligence built from verified planning and execution records.",
       },
       { property: "og:title", content: "Reviews — Yash OS" },
-      { property: "og:description", content: "PRE-THINK → ACT → POST-THINK → IMPROVE." },
+      {
+        property: "og:description",
+        content: "PRE-THINK → ACT → POST-THINK → IMPROVE.",
+      },
     ],
   }),
   component: ReviewsPage,
@@ -94,7 +100,9 @@ function ReviewsPage() {
   });
 
   // Track target date when navigating between views
-  const [targetedDate, setTargetedDate] = useState<string | undefined>(search.date);
+  const [targetedDate, setTargetedDate] = useState<string | undefined>(
+    search.date,
+  );
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
 
@@ -175,7 +183,11 @@ function ReviewsPage() {
           <ReviewOverview
             onSelectTab={(t, v) => {
               if (v) {
-                const searchParams: SearchParams = { tab: t, view: v, date: targetedDate };
+                const searchParams: SearchParams = {
+                  tab: t,
+                  view: v,
+                  date: targetedDate,
+                };
                 nav({ to: "/reviews", search: searchParams, replace: true });
                 setTab(t as TabType);
               } else {
@@ -196,9 +208,7 @@ function ReviewsPage() {
           />
         )}
 
-        {tab === "Daily" && (
-          <DailyReviewView initialDate={targetedDate} />
-        )}
+        {tab === "Daily" && <DailyReviewView initialDate={targetedDate} />}
 
         {tab === "Weekly" && (
           <WeeklyReviewView
@@ -207,29 +217,23 @@ function ReviewsPage() {
           />
         )}
 
-        {tab === "Monthly" && (
-          <MonthlyReviewView initialDate={targetedDate} />
-        )}
+        {tab === "Monthly" && <MonthlyReviewView initialDate={targetedDate} />}
 
         {tab === "History" && (
           <HistoryReviewView onSelectDate={handleSelectDateFromHistory} />
         )}
 
-        {tab === "Bottlenecks" && (
-          <BottlenecksView />
-        )}
+        {tab === "Bottlenecks" && <BottlenecksView />}
 
-        {tab === "Improvements" && (
-          <ImprovementsView />
-        )}
+        {tab === "Improvements" && <ImprovementsView />}
 
         {tab === "AI Analyst" && (
-          <AIAnalystView onGoToImprovements={() => handleTabChange("Improvements")} />
+          <AIAnalystView
+            onGoToImprovements={() => handleTabChange("Improvements")}
+          />
         )}
 
-        {tab === "Forecast" && (
-          <ForecastView />
-        )}
+        {tab === "Forecast" && <ForecastView />}
       </div>
 
       {/* Review Settings & Backup Modal */}
@@ -239,10 +243,7 @@ function ReviewsPage() {
       />
 
       {/* Report Sharing & Permission Modal */}
-      <ReportShareModal
-        open={shareOpen}
-        onClose={() => setShareOpen(false)}
-      />
+      <ReportShareModal open={shareOpen} onClose={() => setShareOpen(false)} />
     </div>
   );
 }

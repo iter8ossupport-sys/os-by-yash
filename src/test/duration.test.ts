@@ -5,22 +5,49 @@ describe("Duration parsing with automatic unit detection", () => {
   it("interprets numeric values without units as hours", () => {
     // Exact table examples from specifications
     expect(parseDurationInput("1")).toMatchObject({ valid: true, minutes: 60 });
-    expect(parseDurationInput("1.5")).toMatchObject({ valid: true, minutes: 90 });
-    expect(parseDurationInput("5")).toMatchObject({ valid: true, minutes: 300 });
-    expect(parseDurationInput("15")).toMatchObject({ valid: true, minutes: 900 });
+    expect(parseDurationInput("1.5")).toMatchObject({
+      valid: true,
+      minutes: 90,
+    });
+    expect(parseDurationInput("5")).toMatchObject({
+      valid: true,
+      minutes: 300,
+    });
+    expect(parseDurationInput("15")).toMatchObject({
+      valid: true,
+      minutes: 900,
+    });
   });
 
   it("interprets values ending in m or M as minutes", () => {
     // Exact table examples from specifications
-    expect(parseDurationInput("15m")).toMatchObject({ valid: true, minutes: 15 });
-    expect(parseDurationInput("30M")).toMatchObject({ valid: true, minutes: 30 });
-    expect(parseDurationInput("90m")).toMatchObject({ valid: true, minutes: 90 });
+    expect(parseDurationInput("15m")).toMatchObject({
+      valid: true,
+      minutes: 15,
+    });
+    expect(parseDurationInput("30M")).toMatchObject({
+      valid: true,
+      minutes: 30,
+    });
+    expect(parseDurationInput("90m")).toMatchObject({
+      valid: true,
+      minutes: 90,
+    });
   });
 
   it("handles whitespace correctly", () => {
-    expect(parseDurationInput("  2.5  ")).toMatchObject({ valid: true, minutes: 150 });
-    expect(parseDurationInput("45 m")).toMatchObject({ valid: true, minutes: 45 });
-    expect(parseDurationInput("  20M ")).toMatchObject({ valid: true, minutes: 20 });
+    expect(parseDurationInput("  2.5  ")).toMatchObject({
+      valid: true,
+      minutes: 150,
+    });
+    expect(parseDurationInput("45 m")).toMatchObject({
+      valid: true,
+      minutes: 45,
+    });
+    expect(parseDurationInput("  20M ")).toMatchObject({
+      valid: true,
+      minutes: 20,
+    });
   });
 
   it("displays interpreted text clearly", () => {

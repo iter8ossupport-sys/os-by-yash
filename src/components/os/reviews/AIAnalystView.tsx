@@ -60,7 +60,9 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
   // Facts, Insights, Recommendations buckets
   const facts = allInsights.filter((i) => i.type === "fact");
   const analyticalInsights = allInsights.filter((i) => i.type === "insight");
-  const recommendations = allInsights.filter((i) => i.type === "recommendation");
+  const recommendations = allInsights.filter(
+    (i) => i.type === "recommendation",
+  );
 
   // Insufficient evidence indicator
   const hasInsufficientEvidence = weekSummary.daysIncluded.length < 3;
@@ -92,11 +94,16 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
       <Glass className="p-4 flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-xl font-bold font-display">AI Performance Analyst</h2>
-            <Badge className="border-cyan/30 text-cyan bg-cyan/10">Deterministic Grounding</Badge>
+            <h2 className="text-xl font-bold font-display">
+              AI Performance Analyst
+            </h2>
+            <Badge className="border-cyan/30 text-cyan bg-cyan/10">
+              Deterministic Grounding
+            </Badge>
           </div>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Strictly separates empirical facts, analytical deductions, and actionable recommendations. Zero hallucinated metrics.
+            Strictly separates empirical facts, analytical deductions, and
+            actionable recommendations. Zero hallucinated metrics.
           </p>
         </div>
 
@@ -116,7 +123,10 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
             Limited Statistical Evidence Notice
           </div>
           <p className="text-muted-foreground leading-relaxed">
-            Only {weekSummary.daysIncluded.length} execution day(s) are recorded in the active period. The Analyst requires at least 3 closed days for high-confidence strategic synthesis. Confidence is flagged as Low.
+            Only {weekSummary.daysIncluded.length} execution day(s) are recorded
+            in the active period. The Analyst requires at least 3 closed days
+            for high-confidence strategic synthesis. Confidence is flagged as
+            Low.
           </p>
         </div>
       )}
@@ -130,7 +140,9 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
           <h3 className="text-sm font-semibold uppercase tracking-wider text-cyan">
             1. Empirical Facts ({facts.length})
           </h3>
-          <span className="text-xs text-muted-foreground">· Directly verified from records</span>
+          <span className="text-xs text-muted-foreground">
+            · Directly verified from records
+          </span>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -138,8 +150,12 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
             <Glass key={f.id} className="p-5 space-y-3">
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  {f.priorityId && <PriorityIcon id={f.priorityId} className="h-6 w-6" />}
-                  <span className="font-semibold text-sm text-foreground">{f.title}</span>
+                  {f.priorityId && (
+                    <PriorityIcon id={f.priorityId} className="h-6 w-6" />
+                  )}
+                  <span className="font-semibold text-sm text-foreground">
+                    {f.title}
+                  </span>
                 </div>
                 <Badge
                   className={cn(
@@ -153,10 +169,14 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
                 </Badge>
               </div>
 
-              <p className="text-xs text-muted-foreground leading-relaxed">{f.body}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {f.body}
+              </p>
 
               <div className="rounded-xl bg-secondary/30 p-2.5 text-[11px] text-muted-foreground space-y-1 border border-glass-border/40">
-                <span className="font-semibold text-foreground block">Verified Data Points:</span>
+                <span className="font-semibold text-foreground block">
+                  Verified Data Points:
+                </span>
                 {f.evidence.dataPoints.map((dp, idx) => (
                   <div key={idx}>· {dp}</div>
                 ))}
@@ -173,7 +193,9 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
           <h3 className="text-sm font-semibold uppercase tracking-wider text-violet">
             2. Analytical Insights ({analyticalInsights.length})
           </h3>
-          <span className="text-xs text-muted-foreground">· Operational patterns & calibration</span>
+          <span className="text-xs text-muted-foreground">
+            · Operational patterns & calibration
+          </span>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -189,10 +211,14 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
                 </Badge>
               </div>
 
-              <p className="text-xs text-muted-foreground leading-relaxed">{ins.body}</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {ins.body}
+              </p>
 
               <div className="rounded-xl bg-secondary/30 p-2.5 text-[11px] text-muted-foreground space-y-1 border border-glass-border/40">
-                <span className="font-semibold text-foreground block">Deduction Basis:</span>
+                <span className="font-semibold text-foreground block">
+                  Deduction Basis:
+                </span>
                 {ins.evidence.dataPoints.map((dp, idx) => (
                   <div key={idx}>· {dp}</div>
                 ))}
@@ -209,17 +235,23 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
           <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">
             3. Actionable Recommendations ({recommendations.length})
           </h3>
-          <span className="text-xs text-muted-foreground">· Concrete proposals grounded in evidence</span>
+          <span className="text-xs text-muted-foreground">
+            · Concrete proposals grounded in evidence
+          </span>
         </div>
 
         {recommendations.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-glass-border p-6 text-center text-xs text-muted-foreground">
-            Zero friction recommendations detected in this period. Execution has minimal recurring stall.
+            Zero friction recommendations detected in this period. Execution has
+            minimal recurring stall.
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             {recommendations.map((rec) => (
-              <Glass key={rec.id} className="p-5 flex flex-col justify-between space-y-4">
+              <Glass
+                key={rec.id}
+                className="p-5 flex flex-col justify-between space-y-4"
+              >
                 <div className="space-y-2">
                   <div className="flex items-start justify-between gap-2">
                     <span className="font-semibold text-sm text-foreground flex items-center gap-2">
@@ -231,10 +263,14 @@ export function AIAnalystView({ onGoToImprovements }: AIAnalystViewProps) {
                     </Badge>
                   </div>
 
-                  <p className="text-xs text-muted-foreground leading-relaxed">{rec.body}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {rec.body}
+                  </p>
 
                   <div className="rounded-xl bg-secondary/30 p-2.5 text-[11px] text-muted-foreground space-y-0.5 border border-glass-border/40">
-                    <span className="font-semibold text-foreground block">Evidence Trigger:</span>
+                    <span className="font-semibold text-foreground block">
+                      Evidence Trigger:
+                    </span>
                     {rec.evidence.dataPoints.map((dp, idx) => (
                       <div key={idx}>· {dp}</div>
                     ))}

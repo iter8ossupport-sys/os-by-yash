@@ -35,9 +35,24 @@ import {
   getISOWeekRange,
 } from "@/lib/os/reviews/analytics";
 import { finalizePeriodReview } from "@/lib/os/reviews/operations";
-import { exportPeriodToCSV, exportPeriodToJSON, printReviewReport } from "@/lib/os/reviews/exportService";
+import {
+  exportPeriodToCSV,
+  exportPeriodToJSON,
+  printReviewReport,
+} from "@/lib/os/reviews/exportService";
 import type { DayRecord, PeriodReviewRecord, PriorityId } from "@/lib/os/types";
-import { Badge, Button, Glass, Input, Label, Modal, PageHeader, PriorityIcon, Progress, Textarea } from "@/components/os/ui";
+import {
+  Badge,
+  Button,
+  Glass,
+  Input,
+  Label,
+  Modal,
+  PageHeader,
+  PriorityIcon,
+  Progress,
+  Textarea,
+} from "@/components/os/ui";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -48,7 +63,10 @@ interface WeeklyReviewViewProps {
 
 const DAYS_OF_WEEK = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewViewProps) {
+export function WeeklyReviewView({
+  initialDate,
+  onNavigateToDay,
+}: WeeklyReviewViewProps) {
   const { state, update } = useOS();
 
   // Current reference date for week calculation
@@ -79,7 +97,10 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
     d.setDate(d.getDate() - 7);
     return d;
   }, [refDate]);
-  const prevWeekInfo = useMemo(() => getISOWeekRange(prevWeekDate), [prevWeekDate]);
+  const prevWeekInfo = useMemo(
+    () => getISOWeekRange(prevWeekDate),
+    [prevWeekDate],
+  );
   const prevSummary = useMemo(() => {
     return calculatePeriodSummary(
       state.history,
@@ -113,15 +134,21 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
         dayName: DAYS_OF_WEEK[i],
         date: iso,
         recorded: Boolean(dayRec),
-        P1: dayRec ? Math.round(((dayRec.actualMin?.[1] ?? 0) / 60) * 10) / 10 : 0,
-        P2: dayRec ? Math.round(((dayRec.actualMin?.[2] ?? 0) / 60) * 10) / 10 : 0,
-        P3: dayRec ? Math.round(((dayRec.actualMin?.[3] ?? 0) / 60) * 10) / 10 : 0,
+        P1: dayRec
+          ? Math.round(((dayRec.actualMin?.[1] ?? 0) / 60) * 10) / 10
+          : 0,
+        P2: dayRec
+          ? Math.round(((dayRec.actualMin?.[2] ?? 0) / 60) * 10) / 10
+          : 0,
+        P3: dayRec
+          ? Math.round(((dayRec.actualMin?.[3] ?? 0) / 60) * 10) / 10
+          : 0,
         Total: dayRec
           ? Math.round(
-              ((dayRec.actualMin?.[1] ?? 0) +
+              (((dayRec.actualMin?.[1] ?? 0) +
                 (dayRec.actualMin?.[2] ?? 0) +
                 (dayRec.actualMin?.[3] ?? 0)) /
-                60 *
+                60) *
                 10,
             ) / 10
           : 0,
@@ -203,7 +230,9 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
 
           <div>
             <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold font-display">Week {weekInfo.id}</h2>
+              <h2 className="text-xl font-bold font-display">
+                Week {weekInfo.id}
+              </h2>
               <span className="text-xs text-muted-foreground font-normal">
                 ({weekInfo.startDate} to {weekInfo.endDate})
               </span>
@@ -219,7 +248,9 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
             </div>
             <div className="text-xs text-muted-foreground mt-0.5">
               {summary.daysIncluded.length} of 7 days recorded ·{" "}
-              {summary.missingDaysCount ? `${summary.missingDaysCount} unrecorded day(s)` : "Full week recorded"}
+              {summary.missingDaysCount
+                ? `${summary.missingDaysCount} unrecorded day(s)`
+                : "Full week recorded"}
             </div>
           </div>
         </div>
@@ -238,7 +269,9 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
             variant="ghost"
             size="sm"
             className="text-xs"
-            onClick={() => printReviewReport(summary, state.history, state.userName)}
+            onClick={() =>
+              printReviewReport(summary, state.history, state.userName)
+            }
           >
             <Printer className="h-3.5 w-3.5 mr-1" /> PDF / Print
           </Button>
@@ -274,7 +307,9 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
             <Clock className="h-4 w-4 text-primary" />
           </div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="font-display text-2xl font-bold">{summary.totalActualHours}h</span>
+            <span className="font-display text-2xl font-bold">
+              {summary.totalActualHours}h
+            </span>
             {wowComparison && (
               <span
                 className={cn(
@@ -282,8 +317,8 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
                   wowComparison.totalHoursDelta > 0
                     ? "text-success"
                     : wowComparison.totalHoursDelta < 0
-                    ? "text-warning"
-                    : "text-muted-foreground",
+                      ? "text-warning"
+                      : "text-muted-foreground",
                 )}
               >
                 {wowComparison.totalHoursDelta > 0 ? "+" : ""}
@@ -292,7 +327,11 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
             )}
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            Planned: {summary.totalPlannedHours}h ({summary.totalActualHours >= summary.totalPlannedHours ? "Met commitment" : "Under capacity"})
+            Planned: {summary.totalPlannedHours}h (
+            {summary.totalActualHours >= summary.totalPlannedHours
+              ? "Met commitment"
+              : "Under capacity"}
+            )
           </div>
         </div>
 
@@ -303,7 +342,9 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
             <CheckCircle2 className="h-4 w-4 text-cyan" />
           </div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="font-display text-2xl font-bold">{summary.taskCompletionRate}%</span>
+            <span className="font-display text-2xl font-bold">
+              {summary.taskCompletionRate}%
+            </span>
             {wowComparison && (
               <span
                 className={cn(
@@ -311,8 +352,8 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
                   wowComparison.taskCompletionRateDelta > 0
                     ? "text-success"
                     : wowComparison.taskCompletionRateDelta < 0
-                    ? "text-warning"
-                    : "text-muted-foreground",
+                      ? "text-warning"
+                      : "text-muted-foreground",
                 )}
               >
                 {wowComparison.taskCompletionRateDelta > 0 ? "+" : ""}
@@ -321,7 +362,8 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
             )}
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            {summary.tasksDoneTotal} / {summary.tasksPlannedTotal} tasks completed
+            {summary.tasksDoneTotal} / {summary.tasksPlannedTotal} tasks
+            completed
           </div>
         </div>
 
@@ -332,7 +374,9 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
             <ShieldCheck className="h-4 w-4 text-success" />
           </div>
           <div className="flex items-baseline gap-2 mt-2">
-            <span className="font-display text-2xl font-bold text-success">{summary.outcomesRate}%</span>
+            <span className="font-display text-2xl font-bold text-success">
+              {summary.outcomesRate}%
+            </span>
             {wowComparison && (
               <span
                 className={cn(
@@ -340,8 +384,8 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
                   wowComparison.outcomesRateDelta > 0
                     ? "text-success"
                     : wowComparison.outcomesRateDelta < 0
-                    ? "text-warning"
-                    : "text-muted-foreground",
+                      ? "text-warning"
+                      : "text-muted-foreground",
                 )}
               >
                 {wowComparison.outcomesRateDelta > 0 ? "+" : ""}
@@ -350,7 +394,8 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
             )}
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            {summary.outcomesAchievedTotal} / {summary.outcomesPlannedTotal} key outcomes verified
+            {summary.outcomesAchievedTotal} / {summary.outcomesPlannedTotal} key
+            outcomes verified
           </div>
         </div>
 
@@ -364,7 +409,8 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
             {summary.p2HoursWorkstreamA}h / {summary.p2HoursWorkstreamB}h
           </div>
           <div className="text-xs text-muted-foreground mt-1">
-            {summary.p2OutputsWorkstreamA} cashflow / {summary.p2OutputsWorkstreamB} product deliverables
+            {summary.p2OutputsWorkstreamA} cashflow /{" "}
+            {summary.p2OutputsWorkstreamB} product deliverables
           </div>
         </div>
       </div>
@@ -373,9 +419,12 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
       <Glass className="p-6">
         <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
           <div>
-            <h3 className="text-base font-semibold">Weekly Execution Cadence · Day-by-Day</h3>
+            <h3 className="text-base font-semibold">
+              Weekly Execution Cadence · Day-by-Day
+            </h3>
             <p className="text-xs text-muted-foreground mt-0.5">
-              Identifies consistent execution rhythm vs unrecorded days (Mon–Sun). Click any recorded day to inspect.
+              Identifies consistent execution rhythm vs unrecorded days
+              (Mon–Sun). Click any recorded day to inspect.
             </p>
           </div>
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -393,10 +442,27 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
 
         <div className="h-64 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={dailyDistributionData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="dayName" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} />
-              <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} unit="h" />
+            <BarChart
+              data={dailyDistributionData}
+              margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="var(--border)"
+                vertical={false}
+              />
+              <XAxis
+                dataKey="dayName"
+                stroke="var(--muted-foreground)"
+                fontSize={12}
+                tickLine={false}
+              />
+              <YAxis
+                stroke="var(--muted-foreground)"
+                fontSize={12}
+                tickLine={false}
+                unit="h"
+              />
               <Tooltip
                 cursor={{ fill: "rgba(255,255,255,0.04)" }}
                 contentStyle={{
@@ -404,18 +470,42 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
                   border: "1px solid var(--border)",
                   borderRadius: 12,
                 }}
-                formatter={(val: any, name: any) => [
+                formatter={(val: unknown, name?: string | number) => [
                   `${val ?? 0}h`,
-                  name ?? "",
+                  String(name ?? ""),
                 ]}
-                labelFormatter={(label: unknown, payload: readonly { payload?: { date?: string } }[]) => {
+                labelFormatter={(
+                  label: unknown,
+                  payload: readonly { payload?: { date?: string } }[],
+                ) => {
                   const date = payload[0]?.payload?.date;
                   return `${label} (${date || ""})`;
                 }}
               />
-              <Bar dataKey="P1" name="Priority 1" stackId="a" fill="var(--p1)" radius={[0, 0, 0, 0]} barSize={32} />
-              <Bar dataKey="P2" name="Priority 2" stackId="a" fill="var(--cyan)" radius={[0, 0, 0, 0]} barSize={32} />
-              <Bar dataKey="P3" name="Priority 3" stackId="a" fill="var(--violet)" radius={[6, 6, 0, 0]} barSize={32} />
+              <Bar
+                dataKey="P1"
+                name="Priority 1"
+                stackId="a"
+                fill="var(--p1)"
+                radius={[0, 0, 0, 0]}
+                barSize={32}
+              />
+              <Bar
+                dataKey="P2"
+                name="Priority 2"
+                stackId="a"
+                fill="var(--cyan)"
+                radius={[0, 0, 0, 0]}
+                barSize={32}
+              />
+              <Bar
+                dataKey="P3"
+                name="Priority 3"
+                stackId="a"
+                fill="var(--violet)"
+                radius={[6, 6, 0, 0]}
+                barSize={32}
+              />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -438,7 +528,9 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
               )}
             >
               <div className="font-semibold">{d.dayName}</div>
-              <div className="text-[11px] mt-0.5">{d.recorded ? `${d.Total}h` : "Rest / Gap"}</div>
+              <div className="text-[11px] mt-0.5">
+                {d.recorded ? `${d.Total}h` : "Rest / Gap"}
+              </div>
             </div>
           ))}
         </div>
@@ -448,35 +540,64 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Priority Breakdown Table */}
         <Glass className="p-6">
-          <h3 className="text-base font-semibold mb-3">Priority Allocation & Outcomes</h3>
+          <h3 className="text-base font-semibold mb-3">
+            Priority Allocation & Outcomes
+          </h3>
           <div className="space-y-3">
             {state.priorities.map((p) => {
               const actual = summary.hoursByPriority[p.id] ?? 0;
               const planned = summary.plannedHoursByPriority[p.id] ?? 0;
               const outPlanned = summary.outcomesByPriority[p.id]?.planned ?? 0;
-              const outAchieved = summary.outcomesByPriority[p.id]?.achieved ?? 0;
-              const pct = summary.totalActualHours > 0 ? Math.round((actual / summary.totalActualHours) * 100) : 0;
+              const outAchieved =
+                summary.outcomesByPriority[p.id]?.achieved ?? 0;
+              const pct =
+                summary.totalActualHours > 0
+                  ? Math.round((actual / summary.totalActualHours) * 100)
+                  : 0;
 
               return (
-                <div key={p.id} className="rounded-2xl border border-glass-border bg-secondary/30 p-4 space-y-2">
+                <div
+                  key={p.id}
+                  className="rounded-2xl border border-glass-border bg-secondary/30 p-4 space-y-2"
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2.5">
                       <PriorityIcon id={p.id} className="h-7 w-7" />
                       <div>
-                        <div className="font-semibold text-xs">#{p.id} {p.name}</div>
-                        <div className="text-[11px] text-muted-foreground">{p.project || "No active project"}</div>
+                        <div className="font-semibold text-xs">
+                          #{p.id} {p.name}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {p.project || "No active project"}
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="font-semibold text-sm">{actual}h <span className="text-xs text-muted-foreground font-normal">/ {planned}h</span></div>
-                      <div className="text-[11px] text-muted-foreground">{pct}% of weekly effort</div>
+                      <div className="font-semibold text-sm">
+                        {actual}h{" "}
+                        <span className="text-xs text-muted-foreground font-normal">
+                          / {planned}h
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-muted-foreground">
+                        {pct}% of weekly effort
+                      </div>
                     </div>
                   </div>
-                  <Progress value={pct} tone={p.id === 1 ? "p1" : p.id === 2 ? "p2" : "p3"} className="h-1" />
+                  <Progress
+                    value={pct}
+                    tone={p.id === 1 ? "p1" : p.id === 2 ? "p2" : "p3"}
+                    className="h-1"
+                  />
                   <div className="flex items-center justify-between text-xs text-muted-foreground pt-1">
-                    <span>Outcomes delivered: {outAchieved} / {outPlanned}</span>
+                    <span>
+                      Outcomes delivered: {outAchieved} / {outPlanned}
+                    </span>
                     <span className="font-medium text-foreground">
-                      {outPlanned > 0 ? Math.round((outAchieved / outPlanned) * 100) : 0}% success
+                      {outPlanned > 0
+                        ? Math.round((outAchieved / outPlanned) * 100)
+                        : 0}
+                      % success
                     </span>
                   </div>
                 </div>
@@ -488,9 +609,12 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
         {/* Compounding Friction & Learnings */}
         <Glass className="p-6 flex flex-col justify-between space-y-4">
           <div>
-            <h3 className="text-base font-semibold mb-2">Recurring Execution Friction</h3>
+            <h3 className="text-base font-semibold mb-2">
+              Recurring Execution Friction
+            </h3>
             <p className="text-xs text-muted-foreground mb-4">
-              Tasks repeatedly postponed in this week. These represent system bottlenecks.
+              Tasks repeatedly postponed in this week. These represent system
+              bottlenecks.
             </p>
 
             {summary.repeatedUnfinishedTasks.length === 0 ? (
@@ -506,8 +630,12 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
                     className="flex items-center justify-between rounded-xl border border-glass-border bg-secondary/30 p-3 text-xs"
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-warning">#{t.priorityId}</span>
-                      <span className="font-medium text-foreground">{t.title}</span>
+                      <span className="font-semibold text-warning">
+                        #{t.priorityId}
+                      </span>
+                      <span className="font-medium text-foreground">
+                        {t.title}
+                      </span>
                     </div>
                     <Badge className="border-warning/30 text-warning bg-warning/10">
                       Postponed {t.count}×
@@ -525,8 +653,12 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
             <ul className="space-y-1.5 text-xs text-muted-foreground mt-2 max-h-32 overflow-y-auto pr-1">
               {summary.learningsSummary.slice(0, 3).map((l, i) => (
                 <li key={i} className="flex gap-2">
-                  <span className="font-mono text-cyan text-[11px] shrink-0">{l.date}:</span>
-                  <span className="text-foreground leading-relaxed">{l.text}</span>
+                  <span className="font-mono text-cyan text-[11px] shrink-0">
+                    {l.date}:
+                  </span>
+                  <span className="text-foreground leading-relaxed">
+                    {l.text}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -543,16 +675,24 @@ export function WeeklyReviewView({ initialDate, onNavigateToDay }: WeeklyReviewV
         >
           <div className="space-y-4 text-xs">
             <p className="text-muted-foreground leading-relaxed">
-              Finalizing creates an immutable historical snapshot of Week {weekInfo.id}. This locks the performance metrics and saves executive conclusions into History.
+              Finalizing creates an immutable historical snapshot of Week{" "}
+              {weekInfo.id}. This locks the performance metrics and saves
+              executive conclusions into History.
             </p>
 
             <div className="grid grid-cols-2 gap-3 rounded-2xl bg-secondary/30 p-3.5">
               <div>
-                <span className="text-muted-foreground">Total Effort Logged</span>
-                <div className="font-semibold text-sm mt-0.5">{summary.totalActualHours}h</div>
+                <span className="text-muted-foreground">
+                  Total Effort Logged
+                </span>
+                <div className="font-semibold text-sm mt-0.5">
+                  {summary.totalActualHours}h
+                </div>
               </div>
               <div>
-                <span className="text-muted-foreground">Task / Outcome Rate</span>
+                <span className="text-muted-foreground">
+                  Task / Outcome Rate
+                </span>
                 <div className="font-semibold text-sm mt-0.5">
                   {summary.taskCompletionRate}% / {summary.outcomesRate}%
                 </div>

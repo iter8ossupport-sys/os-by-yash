@@ -1,8 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { initialState, newDraft, recommendTasks } from "@/lib/os/seed";
-import { approvePlan, emergencyPause, finishTask, pauseTask, startTask, elapsed, buildDayRecord } from "@/lib/os/logic";
+import {
+  approvePlan,
+  emergencyPause,
+  finishTask,
+  pauseTask,
+  startTask,
+  elapsed,
+  buildDayRecord,
+} from "@/lib/os/logic";
 
-const approved = () => approvePlan({ ...initialState, draft: { ...newDraft(), tasks: recommendTasks(initialState.priorities) } });
+const approved = () =>
+  approvePlan({
+    ...initialState,
+    draft: { ...newDraft(), tasks: recommendTasks(initialState.priorities) },
+  });
 
 describe("execution rules", () => {
   it("approval saves the plan without starting a task", () => {
@@ -27,14 +39,21 @@ describe("execution rules", () => {
     s = startTask(s, id, 0);
     s = emergencyPause(s, 30000);
     expect(s.interruptedTaskId).toBe(id);
-    expect(s.plan!.tasks[0]).toMatchObject({ status: "paused", elapsedMs: 30000 });
+    expect(s.plan!.tasks[0]).toMatchObject({
+      status: "paused",
+      elapsedMs: 30000,
+    });
   });
 
   it("finishing records output separately from outcome", () => {
     let s = approved();
     const id = s.plan!.tasks[0]!.id;
     s = finishTask(s, id, { Note: "done" }, false);
-    expect(s.plan!.tasks[0]).toMatchObject({ status: "done", outcomeAchieved: false, output: { Note: "done" } });
+    expect(s.plan!.tasks[0]).toMatchObject({
+      status: "done",
+      outcomeAchieved: false,
+      output: { Note: "done" },
+    });
   });
 
   it("preserves single-active-task invariant when starting another task", () => {
@@ -65,7 +84,7 @@ describe("execution rules", () => {
         "Activity type": "Strategy Research",
         "Financial / simulated result": "+2.5R",
       },
-      true
+      true,
     );
 
     const record = buildDayRecord(s.plan!, "Tested strategy rules");
@@ -90,7 +109,7 @@ describe("execution rules", () => {
         "Actual product output": "Shipped webhook alert flow",
         "Feature or problem": "Latency reduction",
       },
-      false
+      false,
     );
 
     const record = buildDayRecord(s.plan!, "Product sprint");

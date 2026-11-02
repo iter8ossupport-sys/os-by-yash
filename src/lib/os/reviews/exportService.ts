@@ -3,7 +3,10 @@ import type { DayRecord, OSState, ReviewPeriodSummary } from "../types";
 /**
  * Generates and downloads a clean CSV export of review period metrics and daily breakdowns.
  */
-export function exportPeriodToCSV(summary: ReviewPeriodSummary, records: DayRecord[]) {
+export function exportPeriodToCSV(
+  summary: ReviewPeriodSummary,
+  records: DayRecord[],
+) {
   const headers = [
     "Date",
     "State",
@@ -42,7 +45,10 @@ export function exportPeriodToCSV(summary: ReviewPeriodSummary, records: DayReco
     `"${(r.learning ?? "").replace(/"/g, '""')}"`,
   ]);
 
-  const csvContent = [headers.join(","), ...rows.map((row) => row.join(","))].join("\n");
+  const csvContent = [
+    headers.join(","),
+    ...rows.map((row) => row.join(",")),
+  ].join("\n");
   const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
@@ -56,7 +62,10 @@ export function exportPeriodToCSV(summary: ReviewPeriodSummary, records: DayReco
 /**
  * Downloads a structured JSON snapshot of the period summary and underlying records.
  */
-export function exportPeriodToJSON(summary: ReviewPeriodSummary, records: DayRecord[]) {
+export function exportPeriodToJSON(
+  summary: ReviewPeriodSummary,
+  records: DayRecord[],
+) {
   const payload = {
     exportVersion: "1.0",
     exportedAt: new Date().toISOString(),
@@ -64,7 +73,9 @@ export function exportPeriodToJSON(summary: ReviewPeriodSummary, records: DayRec
     records,
   };
 
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: "application/json",
+  });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.setAttribute("href", url);
@@ -77,7 +88,11 @@ export function exportPeriodToJSON(summary: ReviewPeriodSummary, records: DayRec
 /**
  * Opens a print-formatted window suitable for direct Save-as-PDF.
  */
-export function printReviewReport(summary: ReviewPeriodSummary, records: DayRecord[], userName = "Yash") {
+export function printReviewReport(
+  summary: ReviewPeriodSummary,
+  records: DayRecord[],
+  userName = "Yash",
+) {
   const printWindow = window.open("", "_blank");
   if (!printWindow) return;
 

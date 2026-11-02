@@ -1,11 +1,35 @@
 import { useState } from "react";
-import { Check, ChevronDown, Star, Target, Compass, Milestone, Flag } from "lucide-react";
+import {
+  Check,
+  ChevronDown,
+  Star,
+  Target,
+  Compass,
+  Milestone,
+  Flag,
+} from "lucide-react";
 import { useOS } from "@/lib/os/store";
 import type { Metric, PriorityId } from "@/lib/os/types";
 import { cn } from "@/lib/utils";
-import { Badge, Button, Input, Label, Modal, PriorityIcon, Progress, Textarea, priorityTone } from "./ui";
+import {
+  Badge,
+  Button,
+  Input,
+  Label,
+  Modal,
+  PriorityIcon,
+  Progress,
+  Textarea,
+  priorityTone,
+} from "./ui";
 
-function MetricsEditor({ metrics, onChange }: { metrics: Metric[]; onChange: (m: Metric[]) => void }) {
+function MetricsEditor({
+  metrics,
+  onChange,
+}: {
+  metrics: Metric[];
+  onChange: (m: Metric[]) => void;
+}) {
   return (
     <div className="space-y-2">
       <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -13,14 +37,21 @@ function MetricsEditor({ metrics, onChange }: { metrics: Metric[]; onChange: (m:
       </Label>
       <div className="grid gap-2 sm:grid-cols-2">
         {metrics.map((m, i) => (
-          <div key={i} className="grid grid-cols-3 gap-2 rounded-xl border border-glass-border bg-secondary/50 p-2.5 shadow-sm">
+          <div
+            key={i}
+            className="grid grid-cols-3 gap-2 rounded-xl border border-glass-border bg-secondary/50 p-2.5 shadow-sm"
+          >
             <div>
               <Label className="mb-1 text-[10px]">Metric</Label>
               <Input
                 aria-label="Metric"
                 value={m.label}
                 onChange={(e) =>
-                  onChange(metrics.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))
+                  onChange(
+                    metrics.map((x, j) =>
+                      j === i ? { ...x, label: e.target.value } : x,
+                    ),
+                  )
                 }
                 className="h-8 text-xs"
               />
@@ -32,7 +63,11 @@ function MetricsEditor({ metrics, onChange }: { metrics: Metric[]; onChange: (m:
                 placeholder="Target"
                 value={m.target}
                 onChange={(e) =>
-                  onChange(metrics.map((x, j) => (j === i ? { ...x, target: e.target.value } : x)))
+                  onChange(
+                    metrics.map((x, j) =>
+                      j === i ? { ...x, target: e.target.value } : x,
+                    ),
+                  )
                 }
                 className="h-8 text-xs"
               />
@@ -44,7 +79,11 @@ function MetricsEditor({ metrics, onChange }: { metrics: Metric[]; onChange: (m:
                 placeholder="Current"
                 value={m.current}
                 onChange={(e) =>
-                  onChange(metrics.map((x, j) => (j === i ? { ...x, current: e.target.value } : x)))
+                  onChange(
+                    metrics.map((x, j) =>
+                      j === i ? { ...x, current: e.target.value } : x,
+                    ),
+                  )
                 }
                 className="h-8 text-xs"
               />
@@ -84,14 +123,23 @@ function GoalLevelSection({
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="font-display text-base font-semibold leading-tight">{title}</h3>
+              <h3 className="font-display text-base font-semibold leading-tight">
+                {title}
+              </h3>
               {badge}
             </div>
             {/* Clear spacing between heading and description */}
-            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{sub}</p>
+            <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
+              {sub}
+            </p>
           </div>
           <div className="ml-2 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-secondary/60 hover:text-foreground transition">
-            <ChevronDown className={cn("h-4 w-4 transition-transform duration-200", open && "rotate-180")} />
+            <ChevronDown
+              className={cn(
+                "h-4 w-4 transition-transform duration-200",
+                open && "rotate-180",
+              )}
+            />
           </div>
         </button>
       </div>
@@ -108,13 +156,23 @@ function GoalLevelSection({
 export function GoalsPanel() {
   const { state, update, goalsOpen, setGoalsOpen } = useOS();
   const g = state.goals;
-  const setG = (fn: (x: typeof g) => typeof g) => update((s) => ({ ...s, goals: fn(s.goals) }));
+  const setG = (fn: (x: typeof g) => typeof g) =>
+    update((s) => ({ ...s, goals: fn(s.goals) }));
 
   return (
-    <Modal open={goalsOpen} onClose={() => setGoalsOpen(false)} title="Goals & Milestones" wide>
+    <Modal
+      open={goalsOpen}
+      onClose={() => setGoalsOpen(false)}
+      title="Goals & Milestones"
+      wide
+    >
       <div className="mb-6 rounded-2xl border border-glass-border bg-secondary/20 p-4 text-xs text-muted-foreground leading-relaxed">
-        <span className="font-semibold text-foreground">Hierarchy Principle: </span>
-        North Star sets direction → Level A sets the multi-month trajectory → Level B defines the immediate operational window → Level C links each permanent priority to a concrete milestone.
+        <span className="font-semibold text-foreground">
+          Hierarchy Principle:{" "}
+        </span>
+        North Star sets direction → Level A sets the multi-month trajectory →
+        Level B defines the immediate operational window → Level C links each
+        permanent priority to a concrete milestone.
       </div>
 
       <div className="space-y-5">
@@ -123,11 +181,15 @@ export function GoalsPanel() {
           icon={Star}
           title="North Star"
           sub={state.foundation.northStar}
-          badge={<Badge className="border-cyan/30 text-cyan">Guiding Ambition</Badge>}
+          badge={
+            <Badge className="border-cyan/30 text-cyan">Guiding Ambition</Badge>
+          }
           defaultOpen
         >
           <div className="rounded-xl border border-glass-border bg-background/50 p-4 text-sm leading-relaxed">
-            <div className="font-medium text-foreground">{state.foundation.northStarLong}</div>
+            <div className="font-medium text-foreground">
+              {state.foundation.northStarLong}
+            </div>
             <div className="mt-2 text-xs text-muted-foreground">
               Trajectory: {state.foundation.trajectory}
             </div>
@@ -152,13 +214,17 @@ export function GoalsPanel() {
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-glass-border bg-background/40 p-3">
               <div className="flex items-center gap-3">
                 <Label className="mb-0 text-xs font-medium">Goal Period:</Label>
-                <span className="font-semibold text-xs text-foreground">{g.periodMonths} months</span>
+                <span className="font-semibold text-xs text-foreground">
+                  {g.periodMonths} months
+                </span>
                 <input
                   type="range"
                   min={1}
                   max={12}
                   value={g.periodMonths}
-                  onChange={(e) => setG((x) => ({ ...x, periodMonths: +e.target.value }))}
+                  onChange={(e) =>
+                    setG((x) => ({ ...x, periodMonths: +e.target.value }))
+                  }
                   className="w-36"
                   aria-label="Goal period"
                 />
@@ -167,11 +233,16 @@ export function GoalsPanel() {
                 variant={g.levelA.approved ? "success" : "primary"}
                 size="sm"
                 onClick={() =>
-                  setG((x) => ({ ...x, levelA: { ...x.levelA, approved: !x.levelA.approved } }))
+                  setG((x) => ({
+                    ...x,
+                    levelA: { ...x.levelA, approved: !x.levelA.approved },
+                  }))
                 }
               >
                 <Check className="h-3.5 w-3.5" />
-                {g.levelA.approved ? "Approved — click to reopen" : "Approve Level A"}
+                {g.levelA.approved
+                  ? "Approved — click to reopen"
+                  : "Approve Level A"}
               </Button>
             </div>
 
@@ -181,14 +252,26 @@ export function GoalsPanel() {
                 rows={2}
                 value={g.levelA.text}
                 onChange={(e) =>
-                  setG((x) => ({ ...x, levelA: { ...x.levelA, text: e.target.value, approved: false } }))
+                  setG((x) => ({
+                    ...x,
+                    levelA: {
+                      ...x.levelA,
+                      text: e.target.value,
+                      approved: false,
+                    },
+                  }))
                 }
               />
             </div>
 
             <MetricsEditor
               metrics={g.levelA.metrics}
-              onChange={(m) => setG((x) => ({ ...x, levelA: { ...x.levelA, metrics: m, approved: false } }))}
+              onChange={(m) =>
+                setG((x) => ({
+                  ...x,
+                  levelA: { ...x.levelA, metrics: m, approved: false },
+                }))
+              }
             />
           </div>
         </GoalLevelSection>
@@ -210,14 +293,23 @@ export function GoalsPanel() {
           <div className="space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-glass-border bg-background/40 p-3">
               <div className="flex items-center gap-3">
-                <Label className="mb-0 text-xs font-medium">Execution Window:</Label>
-                <span className="font-semibold text-xs text-foreground">{g.levelB.days} days</span>
+                <Label className="mb-0 text-xs font-medium">
+                  Execution Window:
+                </Label>
+                <span className="font-semibold text-xs text-foreground">
+                  {g.levelB.days} days
+                </span>
                 <input
                   type="range"
                   min={14}
                   max={90}
                   value={g.levelB.days}
-                  onChange={(e) => setG((x) => ({ ...x, levelB: { ...x.levelB, days: +e.target.value } }))}
+                  onChange={(e) =>
+                    setG((x) => ({
+                      ...x,
+                      levelB: { ...x.levelB, days: +e.target.value },
+                    }))
+                  }
                   className="w-36"
                   aria-label="Milestone window"
                 />
@@ -226,11 +318,16 @@ export function GoalsPanel() {
                 variant={g.levelB.approved ? "success" : "primary"}
                 size="sm"
                 onClick={() =>
-                  setG((x) => ({ ...x, levelB: { ...x.levelB, approved: !x.levelB.approved } }))
+                  setG((x) => ({
+                    ...x,
+                    levelB: { ...x.levelB, approved: !x.levelB.approved },
+                  }))
                 }
               >
                 <Check className="h-3.5 w-3.5" />
-                {g.levelB.approved ? "Approved — click to reopen" : "Approve Level B"}
+                {g.levelB.approved
+                  ? "Approved — click to reopen"
+                  : "Approve Level B"}
               </Button>
             </div>
 
@@ -240,14 +337,26 @@ export function GoalsPanel() {
                 rows={2}
                 value={g.levelB.text}
                 onChange={(e) =>
-                  setG((x) => ({ ...x, levelB: { ...x.levelB, text: e.target.value, approved: false } }))
+                  setG((x) => ({
+                    ...x,
+                    levelB: {
+                      ...x.levelB,
+                      text: e.target.value,
+                      approved: false,
+                    },
+                  }))
                 }
               />
             </div>
 
             <MetricsEditor
               metrics={g.levelB.metrics}
-              onChange={(m) => setG((x) => ({ ...x, levelB: { ...x.levelB, metrics: m, approved: false } }))}
+              onChange={(m) =>
+                setG((x) => ({
+                  ...x,
+                  levelB: { ...x.levelB, metrics: m, approved: false },
+                }))
+              }
             />
           </div>
         </GoalLevelSection>
@@ -264,14 +373,21 @@ export function GoalsPanel() {
             {state.priorities.map((p) => {
               const c = g.levelC[p.id as PriorityId];
               const setC = (patch: Partial<typeof c>) =>
-                setG((x) => ({ ...x, levelC: { ...x.levelC, [p.id]: { ...c, ...patch } } }));
+                setG((x) => ({
+                  ...x,
+                  levelC: { ...x.levelC, [p.id]: { ...c, ...patch } },
+                }));
 
               return (
                 <div
                   key={p.id}
                   className={cn(
                     "flex flex-col justify-between space-y-3 rounded-2xl border border-glass-border bg-secondary/40 p-4 shadow-sm",
-                    p.id === 1 ? "border-t-2 border-t-p1" : p.id === 2 ? "border-t-2 border-t-p2" : "border-t-2 border-t-p3"
+                    p.id === 1
+                      ? "border-t-2 border-t-p1"
+                      : p.id === 2
+                        ? "border-t-2 border-t-p2"
+                        : "border-t-2 border-t-p3",
                   )}
                 >
                   <div className="space-y-3">
@@ -281,13 +397,19 @@ export function GoalsPanel() {
                         <div className="font-display text-xs font-bold uppercase tracking-wider text-muted-foreground">
                           Priority {p.id}
                         </div>
-                        <div className="text-sm font-semibold truncate">{p.name}</div>
-                        <div className="text-[11px] text-cyan truncate">{p.project || "No project"}</div>
+                        <div className="text-sm font-semibold truncate">
+                          {p.name}
+                        </div>
+                        <div className="text-[11px] text-cyan truncate">
+                          {p.project || "No project"}
+                        </div>
                       </div>
                     </div>
 
                     <div>
-                      <Label className="mb-1 text-[11px]">Milestone Target</Label>
+                      <Label className="mb-1 text-[11px]">
+                        Milestone Target
+                      </Label>
                       <Textarea
                         rows={2}
                         value={c.target}
@@ -297,7 +419,9 @@ export function GoalsPanel() {
                     </div>
 
                     <div>
-                      <Label className="mb-1 text-[11px]">Target Deadline</Label>
+                      <Label className="mb-1 text-[11px]">
+                        Target Deadline
+                      </Label>
                       <Input
                         type="date"
                         value={c.deadline}
@@ -307,7 +431,9 @@ export function GoalsPanel() {
                     </div>
 
                     <div>
-                      <Label className="mb-1 text-[11px]">Current Evidence</Label>
+                      <Label className="mb-1 text-[11px]">
+                        Current Evidence
+                      </Label>
                       <Input
                         value={c.evidence}
                         placeholder="What evidence proves progress?"
@@ -319,7 +445,9 @@ export function GoalsPanel() {
 
                   <div className="border-t border-glass-border pt-3 space-y-2">
                     <div className="flex justify-between text-xs">
-                      <span className="text-muted-foreground">Self-assessed progress</span>
+                      <span className="text-muted-foreground">
+                        Self-assessed progress
+                      </span>
                       <span className="font-semibold">{c.progress}%</span>
                     </div>
                     <input

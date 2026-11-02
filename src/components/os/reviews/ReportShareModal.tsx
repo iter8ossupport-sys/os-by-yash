@@ -13,7 +13,10 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useOS } from "@/lib/os/store";
-import { createReportShare, deleteReportShare } from "@/lib/os/reviews/operations";
+import {
+  createReportShare,
+  deleteReportShare,
+} from "@/lib/os/reviews/operations";
 import type { ReportShareConfig } from "@/lib/os/types";
 import { Badge, Button, Glass, Input, Label } from "@/components/os/ui";
 import { cn } from "@/lib/utils";
@@ -39,7 +42,8 @@ export function ReportShareModal({
   const { state, update } = useOS();
 
   const [recipient, setRecipient] = useState("");
-  const [permissionLevel, setPermissionLevel] = useState<ReportShareConfig["permissionLevel"]>("summary_only");
+  const [permissionLevel, setPermissionLevel] =
+    useState<ReportShareConfig["permissionLevel"]>("summary_only");
   const [includeFinancials, setIncludeFinancials] = useState(false);
   const [includeAuditHistory, setIncludeAuditHistory] = useState(false);
   const [expiresInDays, setExpiresInDays] = useState<number>(30);
@@ -48,9 +52,10 @@ export function ReportShareModal({
   const sharedReports = state.sharedReports ?? [];
 
   const handleCreateShare = () => {
-    const expiresAt = expiresInDays > 0
-      ? new Date(Date.now() + expiresInDays * 864e5).toISOString()
-      : undefined;
+    const expiresAt =
+      expiresInDays > 0
+        ? new Date(Date.now() + expiresInDays * 864e5).toISOString()
+        : undefined;
 
     update((s) => {
       const res = createReportShare(s, {
@@ -128,14 +133,22 @@ export function ReportShareModal({
               <Share2 className="h-4 w-4" />
             </div>
             <div>
-              <h2 className="text-base font-bold font-display">Export & Report Sharing Permissions</h2>
+              <h2 className="text-base font-bold font-display">
+                Export & Report Sharing Permissions
+              </h2>
               <p className="text-xs text-muted-foreground">
-                Generate permission-scoped, redacted digests and future cryptographically tokenized links
+                Generate permission-scoped, redacted digests and future
+                cryptographically tokenized links
               </p>
             </div>
           </div>
 
-          <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClose}
+            className="h-8 w-8 p-0"
+          >
             ✕
           </Button>
         </div>
@@ -146,7 +159,12 @@ export function ReportShareModal({
           <div className="p-3.5 rounded-lg border border-primary/20 bg-primary/5 flex items-start gap-3">
             <Lock className="h-4 w-4 text-primary shrink-0 mt-0.5" />
             <div className="text-xs text-muted-foreground leading-relaxed">
-              <strong className="text-foreground">Local-First Security Policy:</strong> All exports and digests are generated entirely on your device. Proprietary founder financial data is stripped by default unless explicitly checked below.
+              <strong className="text-foreground">
+                Local-First Security Policy:
+              </strong>{" "}
+              All exports and digests are generated entirely on your device.
+              Proprietary founder financial data is stripped by default unless
+              explicitly checked below.
             </div>
           </div>
 
@@ -158,7 +176,9 @@ export function ReportShareModal({
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label className="text-xs">Recipient / Audience Label (Optional)</Label>
+                <Label className="text-xs">
+                  Recipient / Audience Label (Optional)
+                </Label>
                 <Input
                   placeholder="e.g. Mentor, Advisory Board, Accountability Partner"
                   value={recipient}
@@ -171,7 +191,9 @@ export function ReportShareModal({
                 <Label className="text-xs">Expiration Window</Label>
                 <select
                   value={expiresInDays}
-                  onChange={(e) => setExpiresInDays(parseInt(e.target.value, 10))}
+                  onChange={(e) =>
+                    setExpiresInDays(parseInt(e.target.value, 10))
+                  }
                   className="mt-1 w-full h-9 rounded-md border border-glass-border bg-background px-3 py-1 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   <option value={7}>7 Days</option>
@@ -211,11 +233,15 @@ export function ReportShareModal({
                       "p-3 rounded-lg border text-left transition-all",
                       permissionLevel === tier.id
                         ? "border-primary bg-primary/10 shadow-sm"
-                        : "border-glass-border bg-secondary/20 hover:border-glass-border/80"
+                        : "border-glass-border bg-secondary/20 hover:border-glass-border/80",
                     )}
                   >
-                    <div className="text-xs font-semibold text-foreground">{tier.title}</div>
-                    <div className="text-[11px] text-muted-foreground mt-1 leading-snug">{tier.desc}</div>
+                    <div className="text-xs font-semibold text-foreground">
+                      {tier.title}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground mt-1 leading-snug">
+                      {tier.desc}
+                    </div>
                   </button>
                 ))}
               </div>
@@ -225,8 +251,12 @@ export function ReportShareModal({
             <div className="space-y-2 pt-1 border-t border-glass-border">
               <div className="flex items-center justify-between text-xs">
                 <div>
-                  <span className="font-semibold text-foreground">Include Financial & P2 PnL Allocation</span>
-                  <p className="text-[11px] text-muted-foreground">Uncheck to strip sensitive trading revenue/drawdowns</p>
+                  <span className="font-semibold text-foreground">
+                    Include Financial & P2 PnL Allocation
+                  </span>
+                  <p className="text-[11px] text-muted-foreground">
+                    Uncheck to strip sensitive trading revenue/drawdowns
+                  </p>
                 </div>
                 <input
                   type="checkbox"
@@ -238,8 +268,12 @@ export function ReportShareModal({
 
               <div className="flex items-center justify-between text-xs">
                 <div>
-                  <span className="font-semibold text-foreground">Include Audit History Logs</span>
-                  <p className="text-[11px] text-muted-foreground">Include retroactive correction timestamps and adjustments</p>
+                  <span className="font-semibold text-foreground">
+                    Include Audit History Logs
+                  </span>
+                  <p className="text-[11px] text-muted-foreground">
+                    Include retroactive correction timestamps and adjustments
+                  </p>
                 </div>
                 <input
                   type="checkbox"
@@ -269,7 +303,8 @@ export function ReportShareModal({
 
             {sharedReports.length === 0 ? (
               <div className="p-6 text-center border border-dashed rounded-lg border-glass-border text-xs text-muted-foreground">
-                No active report tokens generated yet. Configure a permission grant above to share this period.
+                No active report tokens generated yet. Configure a permission
+                grant above to share this period.
               </div>
             ) : (
               <div className="space-y-2">
@@ -361,7 +396,12 @@ export function ReportShareModal({
 
         {/* Modal Footer */}
         <div className="p-4 border-t border-glass-border bg-secondary/10 flex justify-end">
-          <Button variant="glass" size="sm" onClick={onClose} className="text-xs">
+          <Button
+            variant="glass"
+            size="sm"
+            onClick={onClose}
+            className="text-xs"
+          >
             Close
           </Button>
         </div>

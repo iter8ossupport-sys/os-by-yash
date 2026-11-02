@@ -112,8 +112,14 @@ describe("Reviews Frontend Finalization & Service Architecture", () => {
       },
     };
 
-    const alertsTriggered = generatePeriodAlerts(summaryWithImbalance, [], strictAlerts);
-    const imbalanceAlert = alertsTriggered.find((a) => a.category === "workstream_imbalance");
+    const alertsTriggered = generatePeriodAlerts(
+      summaryWithImbalance,
+      [],
+      strictAlerts,
+    );
+    const imbalanceAlert = alertsTriggered.find(
+      (a) => a.category === "workstream_imbalance",
+    );
     expect(imbalanceAlert).toBeDefined();
 
     // Now disable workstreamImbalance alert
@@ -125,8 +131,14 @@ describe("Reviews Frontend Finalization & Service Architecture", () => {
       },
     };
 
-    const alertsSuppressed = generatePeriodAlerts(summaryWithImbalance, [], relaxedAlerts);
-    expect(alertsSuppressed.find((a) => a.category === "workstream_imbalance")).toBeUndefined();
+    const alertsSuppressed = generatePeriodAlerts(
+      summaryWithImbalance,
+      [],
+      relaxedAlerts,
+    );
+    expect(
+      alertsSuppressed.find((a) => a.category === "workstream_imbalance"),
+    ).toBeUndefined();
   });
 
   it("3. Custom reflection questions and custom metrics can be stored and mutated in reviewSettings", () => {
@@ -142,10 +154,14 @@ describe("Reviews Frontend Finalization & Service Architecture", () => {
     };
 
     let state = addCustomMetric(initialState, metric);
-    expect(state.reviewSettings?.customMetrics?.some((m) => m.id === "cm-test")).toBe(true);
+    expect(
+      state.reviewSettings?.customMetrics?.some((m) => m.id === "cm-test"),
+    ).toBe(true);
 
     state = deleteCustomMetric(state, "cm-test");
-    expect(state.reviewSettings?.customMetrics?.some((m) => m.id === "cm-test")).toBe(false);
+    expect(
+      state.reviewSettings?.customMetrics?.some((m) => m.id === "cm-test"),
+    ).toBe(false);
 
     const customTemplates: ReflectionTemplate = {
       daily: ["What was today's high-leverage win?"],
@@ -154,7 +170,9 @@ describe("Reviews Frontend Finalization & Service Architecture", () => {
     };
 
     state = updateReflectionTemplates(state, customTemplates);
-    expect(state.reviewSettings?.reflectionTemplates?.daily[0]).toBe("What was today's high-leverage win?");
+    expect(state.reviewSettings?.reflectionTemplates?.daily[0]).toBe(
+      "What was today's high-leverage win?",
+    );
   });
 
   it("4. Forecast accuracy & calibration ledger logs predictions and calculates delivery variance", () => {
@@ -189,7 +207,9 @@ describe("Reviews Frontend Finalization & Service Architecture", () => {
     });
     const lateId = lateState.forecastHistory![0]!.id;
     lateState = markForecastDelivered(lateState, lateId, "2026-11-18");
-    const lateSnapshot = lateState.forecastHistory?.find((f) => f.id === lateId);
+    const lateSnapshot = lateState.forecastHistory?.find(
+      (f) => f.id === lateId,
+    );
     expect(lateSnapshot?.accuracyVarianceDays).toBe(8);
     expect(lateSnapshot?.calibrationRating).toBe("optimistic_bias");
   });
@@ -207,7 +227,9 @@ describe("Reviews Frontend Finalization & Service Architecture", () => {
     expect(res.share.includeFinancials).toBe(false);
 
     const revokedState = deleteReportShare(res.state, res.share.id);
-    expect(revokedState.sharedReports?.some((s) => s.id === res.share.id)).toBe(false);
+    expect(revokedState.sharedReports?.some((s) => s.id === res.share.id)).toBe(
+      false,
+    );
   });
 
   it("6. Stable LocalStorageReviewsAdapter service returns typed data matching IReviewsService", async () => {

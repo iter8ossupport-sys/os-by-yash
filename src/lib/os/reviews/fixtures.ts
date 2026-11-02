@@ -108,7 +108,8 @@ export const demoReviewDays: DayRecord[] = [
     ],
     outcomesAchieved: [1, 2],
     unfinished: ["Write release checklist"],
-    learning: "Pre-thinking auth state edge-cases saved 2 hours of post-deploy firefighting.",
+    learning:
+      "Pre-thinking auth state edge-cases saved 2 hours of post-deploy firefighting.",
     p2WorkstreamMinutes: { workstreamA: 60, workstreamB: 50 },
     finalizedAt: "2026-10-19T21:40:00.000Z",
   },
@@ -140,7 +141,8 @@ export const demoReviewDays: DayRecord[] = [
     ],
     outcomesAchieved: [1, 2, 3],
     unfinished: [],
-    learning: "User quotes are 10x more actionable than hypothetical telemetry.",
+    learning:
+      "User quotes are 10x more actionable than hypothetical telemetry.",
     p2WorkstreamMinutes: { workstreamA: 65, workstreamB: 30 },
     finalizedAt: "2026-10-20T22:15:00.000Z",
   },
@@ -171,9 +173,14 @@ export const demoReviewDays: DayRecord[] = [
       },
     ],
     outcomesAchieved: [1],
-    unfinished: ["Automate one manual LBES step", "Write a lesson into Knowledge"],
+    unfinished: [
+      "Automate one manual LBES step",
+      "Write a lesson into Knowledge",
+    ],
     learning: "Low energy days require scoping to 1 critical task only.",
-    bottlenecksNoted: ["Automate one manual LBES step stalled on webhook permissions"],
+    bottlenecksNoted: [
+      "Automate one manual LBES step stalled on webhook permissions",
+    ],
     p2WorkstreamMinutes: { workstreamA: 60, workstreamB: 0 },
     finalizedAt: "2026-10-21T21:00:00.000Z",
   },
@@ -248,7 +255,8 @@ export const demoReviewDays: DayRecord[] = [
         field: "actualMin[1]",
         oldValue: 120,
         newValue: 150,
-        reason: "Adjusted 30m spent verifying Safari bug that was logged after midnight.",
+        reason:
+          "Adjusted 30m spent verifying Safari bug that was logged after midnight.",
         source: "user_correction",
       },
     ],
@@ -287,7 +295,8 @@ export const demoReviewDays: DayRecord[] = [
     ],
     outcomesAchieved: [1, 2, 3],
     unfinished: [],
-    learning: "Risk management in trading translates directly to scoping small releases.",
+    learning:
+      "Risk management in trading translates directly to scoping small releases.",
     p2WorkstreamMinutes: { workstreamA: 95, workstreamB: 0 },
     finalizedAt: "2026-10-25T19:00:00.000Z",
   },
@@ -327,7 +336,8 @@ export const demoReviewDays: DayRecord[] = [
     ],
     outcomesAchieved: [1, 2, 3],
     unfinished: [],
-    learning: "Direct outreach with a tailored proposal converts 10x better than generic landing pages.",
+    learning:
+      "Direct outreach with a tailored proposal converts 10x better than generic landing pages.",
     p2WorkstreamMinutes: { workstreamA: 60, workstreamB: 50 },
     finalizedAt: "2026-10-26T21:45:00.000Z",
   },
@@ -359,7 +369,8 @@ export const demoReviewDays: DayRecord[] = [
     ],
     outcomesAchieved: [1, 2],
     unfinished: [],
-    learning: "First dollar earned from software changes founder psychology permanently.",
+    learning:
+      "First dollar earned from software changes founder psychology permanently.",
     p2WorkstreamMinutes: { workstreamA: 85, workstreamB: 0 },
     finalizedAt: "2026-10-27T22:00:00.000Z",
   },
@@ -371,34 +382,39 @@ export const demoBottlenecks: ReviewBottleneck[] = [
     priorityId: 1,
     projectId: "demo-killarity",
     title: "Manual user conversation scheduling",
-    description: "Reaching out via DMs and waiting for replies causes 2-day lags per conversation.",
+    description:
+      "Reaching out via DMs and waiting for replies causes 2-day lags per conversation.",
     severity: "medium",
     status: "mitigating",
     firstObservedDate: "2026-10-20",
     lastObservedDate: "2026-10-26",
     occurrenceCount: 3,
     sourceDayDates: ["2026-10-20", "2026-10-23", "2026-10-26"],
-    mitigationPlan: "Include direct Cal.com calendar link in first outreach DM.",
+    mitigationPlan:
+      "Include direct Cal.com calendar link in first outreach DM.",
   },
   {
     id: "bot-2",
     priorityId: 2,
     projectId: "demo-lbes",
     title: "Manual session data entry",
-    description: "Entering execution prices by hand takes 20 minutes and is prone to transcription typos.",
+    description:
+      "Entering execution prices by hand takes 20 minutes and is prone to transcription typos.",
     severity: "high",
     status: "active",
     firstObservedDate: "2026-10-21",
     lastObservedDate: "2026-10-25",
     occurrenceCount: 4,
     sourceDayDates: ["2026-10-21", "2026-10-22", "2026-10-23", "2026-10-25"],
-    mitigationPlan: "Complete automated webhook bridge for LBES execution logs.",
+    mitigationPlan:
+      "Complete automated webhook bridge for LBES execution logs.",
   },
   {
     id: "bot-3",
     priorityId: 3,
     title: "Learning not linked to next day's tasks",
-    description: "Study takeaways often stayed in notes without immediate execution inside active projects.",
+    description:
+      "Study takeaways often stayed in notes without immediate execution inside active projects.",
     severity: "low",
     status: "resolved",
     firstObservedDate: "2026-10-19",
@@ -406,7 +422,8 @@ export const demoBottlenecks: ReviewBottleneck[] = [
     occurrenceCount: 2,
     sourceDayDates: ["2026-10-19", "2026-10-21"],
     resolvedAt: "2026-10-25",
-    resolutionNotes: "Enforced rule: every Priority 3 study takeaway must tag a specific task in the next plan.",
+    resolutionNotes:
+      "Enforced rule: every Priority 3 study takeaway must tag a specific task in the next plan.",
   },
 ];
 
@@ -417,13 +434,15 @@ export const demoImprovements: ReviewImprovement[] = [
     periodRef: "2026-W43",
     priorityId: 2,
     projectId: "demo-lbes",
-    problemStatement: "Manual LBES step was left unfinished across 2 consecutive days due to webhook permissions.",
+    problemStatement:
+      "Manual LBES step was left unfinished across 2 consecutive days due to webhook permissions.",
     evidence: {
       metrics: ["Unfinished tasks: 2", "Lost time: ~45m/day on manual entry"],
       dayDates: ["2026-10-21", "2026-10-22"],
       taskTitles: ["Automate one manual LBES step"],
     },
-    recommendation: "Scope the automation to a single Cloudflare Worker webhook instead of a full local daemon.",
+    recommendation:
+      "Scope the automation to a single Cloudflare Worker webhook instead of a full local daemon.",
     status: "implemented",
     decisionDate: "2026-10-23",
     decisionNote: "Approved. Building simple worker webhook.",
@@ -432,7 +451,8 @@ export const demoImprovements: ReviewImprovement[] = [
     targetMetric: "Zero manual data entry time",
     evaluatedAt: "2026-10-26",
     evaluationOutcome: "succeeded",
-    evaluationNotes: "Webhook runs reliably. Saved 20 minutes on Monday session.",
+    evaluationNotes:
+      "Webhook runs reliably. Saved 20 minutes on Monday session.",
     createdAt: "2026-10-22T20:00:00.000Z",
   },
   {
@@ -441,12 +461,14 @@ export const demoImprovements: ReviewImprovement[] = [
     periodRef: "2026-10-26",
     priorityId: 1,
     projectId: "demo-killarity",
-    problemStatement: "Beta invites had low immediate response because they lacked a personal demo video link.",
+    problemStatement:
+      "Beta invites had low immediate response because they lacked a personal demo video link.",
     evidence: {
       metrics: ["Activation rate: 20% on day 1"],
       dayDates: ["2026-10-23"],
     },
-    recommendation: "Record a 60-second personalized Loom for each customer outreach instead of plain text.",
+    recommendation:
+      "Record a 60-second personalized Loom for each customer outreach instead of plain text.",
     status: "approved",
     decisionDate: "2026-10-27",
     decisionNote: "Approved for the next 5 customer reach-outs.",
@@ -455,4 +477,3 @@ export const demoImprovements: ReviewImprovement[] = [
     createdAt: "2026-10-27T10:00:00.000Z",
   },
 ];
-

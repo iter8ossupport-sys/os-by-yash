@@ -84,7 +84,13 @@ export class LocalStorageReviewsAdapter implements IReviewsService {
   async saveDayCorrection(req: SaveDayCorrectionRequest): Promise<DayRecord> {
     let corrected: DayRecord | undefined;
     writeState((s) => {
-      const next = correctDayRecord(s, req.date, req.field, req.newValue, req.reason);
+      const next = correctDayRecord(
+        s,
+        req.date,
+        req.field,
+        req.newValue,
+        req.reason,
+      );
       corrected = next.history?.find((d: DayRecord) => d.date === req.date);
       return next;
     });
@@ -96,14 +102,18 @@ export class LocalStorageReviewsAdapter implements IReviewsService {
     return state.periodReviews?.find((p) => p.id === id) ?? null;
   }
 
-  async listPeriodReviews(type?: "weekly" | "monthly"): Promise<PeriodReviewRecord[]> {
+  async listPeriodReviews(
+    type?: "weekly" | "monthly",
+  ): Promise<PeriodReviewRecord[]> {
     const state = readState();
     const list = state.periodReviews ?? [];
     if (!type) return list;
     return list.filter((p) => p.type === type);
   }
 
-  async finalizePeriodReview(req: FinalizePeriodRequest): Promise<PeriodReviewRecord> {
+  async finalizePeriodReview(
+    req: FinalizePeriodRequest,
+  ): Promise<PeriodReviewRecord> {
     writeState((s) => opFinalizePeriodReview(s, req.review));
     return req.review;
   }
@@ -118,21 +128,30 @@ export class LocalStorageReviewsAdapter implements IReviewsService {
     return state.bottlenecks ?? [];
   }
 
-  async createBottleneck(req: Omit<ReviewBottleneck, "id">): Promise<ReviewBottleneck> {
+  async createBottleneck(
+    req: Omit<ReviewBottleneck, "id">,
+  ): Promise<ReviewBottleneck> {
     let created: ReviewBottleneck | undefined;
     writeState((s) => {
       const next = addOrUpdateBottleneck(s, req);
-      created = next.bottlenecks?.find((b: ReviewBottleneck) => b.title === req.title);
+      created = next.bottlenecks?.find(
+        (b: ReviewBottleneck) => b.title === req.title,
+      );
       return next;
     });
     return created!;
   }
 
-  async updateBottleneck(id: string, patch: Partial<ReviewBottleneck>): Promise<ReviewBottleneck> {
+  async updateBottleneck(
+    id: string,
+    patch: Partial<ReviewBottleneck>,
+  ): Promise<ReviewBottleneck> {
     let updated: ReviewBottleneck | undefined;
     writeState((s) => {
       const current = s.bottlenecks ?? [];
-      const nextBottlenecks = current.map((b) => (b.id === id ? { ...b, ...patch } : b));
+      const nextBottlenecks = current.map((b) =>
+        b.id === id ? { ...b, ...patch } : b,
+      );
       updated = nextBottlenecks.find((b) => b.id === id);
       return { ...s, bottlenecks: nextBottlenecks };
     });
@@ -152,7 +171,9 @@ export class LocalStorageReviewsAdapter implements IReviewsService {
     return state.improvements ?? [];
   }
 
-  async createImprovement(req: Omit<ReviewImprovement, "id">): Promise<ReviewImprovement> {
+  async createImprovement(
+    req: Omit<ReviewImprovement, "id">,
+  ): Promise<ReviewImprovement> {
     let created: ReviewImprovement | undefined;
     writeState((s) => {
       const next = addImprovement(s, req);
@@ -162,7 +183,10 @@ export class LocalStorageReviewsAdapter implements IReviewsService {
     return created!;
   }
 
-  async updateImprovement(id: string, patch: Partial<ReviewImprovement>): Promise<ReviewImprovement> {
+  async updateImprovement(
+    id: string,
+    patch: Partial<ReviewImprovement>,
+  ): Promise<ReviewImprovement> {
     let updated: ReviewImprovement | undefined;
     writeState((s) => {
       const next = opUpdateImprovement(s, id, patch);
@@ -190,22 +214,29 @@ export class LocalStorageReviewsAdapter implements IReviewsService {
     return true;
   }
 
-  async convertAIInsightToImprovement(id: string, improvementTitle: string): Promise<ReviewImprovement> {
+  async convertAIInsightToImprovement(
+    id: string,
+    improvementTitle: string,
+  ): Promise<ReviewImprovement> {
     const insight = (readState().aiInsights ?? []).find((i) => i.id === id);
     const imp = await this.createImprovement({
       periodType: "weekly",
-      periodRef: insight?.evidence.sourcePeriod ?? new Date().toISOString().slice(0, 10),
+      periodRef:
+        insight?.evidence.sourcePeriod ?? new Date().toISOString().slice(0, 10),
       priorityId: insight?.priorityId,
       problemStatement: insight?.title ?? "Identified Friction",
       evidence: {
         metrics: insight?.evidence.dataPoints ?? [],
         dayDates: [],
       },
-      recommendation: insight?.recommendedAction ?? insight?.body ?? improvementTitle,
+      recommendation:
+        insight?.recommendedAction ?? insight?.body ?? improvementTitle,
       status: "proposed",
       createdAt: new Date().toISOString(),
     });
-    writeState((s) => updateAIInsight(s, id, { status: "converted_to_improvement" }));
+    writeState((s) =>
+      updateAIInsight(s, id, { status: "converted_to_improvement" }),
+    );
     return imp;
   }
 
@@ -214,7 +245,9 @@ export class LocalStorageReviewsAdapter implements IReviewsService {
     return state.forecastHistory ?? [];
   }
 
-  async saveForecastSnapshot(req: SaveForecastSnapshotRequest): Promise<ForecastSnapshot> {
+  async saveForecastSnapshot(
+    req: SaveForecastSnapshotRequest,
+  ): Promise<ForecastSnapshot> {
     let created: ForecastSnapshot | undefined;
     writeState((s) => {
       const next = addForecastSnapshot(s, {
@@ -233,7 +266,9 @@ export class LocalStorageReviewsAdapter implements IReviewsService {
     return created!;
   }
 
-  async markForecastDelivered(req: MarkForecastDeliveredRequest): Promise<ForecastSnapshot> {
+  async markForecastDelivered(
+    req: MarkForecastDeliveredRequest,
+  ): Promise<ForecastSnapshot> {
     let delivered: ForecastSnapshot | undefined;
     writeState((s) => {
       const next = opMarkForecastDelivered(s, req.snapshotId, req.actualDate);
@@ -248,11 +283,14 @@ export class LocalStorageReviewsAdapter implements IReviewsService {
     return state.sharedReports ?? [];
   }
 
-  async createReportShare(req: CreateReportShareRequest): Promise<ReportShareConfig> {
+  async createReportShare(
+    req: CreateReportShareRequest,
+  ): Promise<ReportShareConfig> {
     let share: ReportShareConfig | undefined;
-    const expiresAt = req.expiresInDays && req.expiresInDays > 0
-      ? new Date(Date.now() + req.expiresInDays * 864e5).toISOString()
-      : undefined;
+    const expiresAt =
+      req.expiresInDays && req.expiresInDays > 0
+        ? new Date(Date.now() + req.expiresInDays * 864e5).toISOString()
+        : undefined;
 
     writeState((s) => {
       const res = createReportShare(s, {
@@ -282,7 +320,9 @@ export class LocalStorageReviewsAdapter implements IReviewsService {
     return state.reviewSettings ?? defaultReviewSettings;
   }
 
-  async updateSettings(settings: Partial<ReviewSettings>): Promise<ReviewSettings> {
+  async updateSettings(
+    settings: Partial<ReviewSettings>,
+  ): Promise<ReviewSettings> {
     let updated: ReviewSettings | undefined;
     writeState((s) => {
       const current = s.reviewSettings ?? defaultReviewSettings;
@@ -293,7 +333,9 @@ export class LocalStorageReviewsAdapter implements IReviewsService {
     return updated!;
   }
 
-  async saveCustomMetric(metric: CustomMetricDefinition): Promise<ReviewSettings> {
+  async saveCustomMetric(
+    metric: CustomMetricDefinition,
+  ): Promise<ReviewSettings> {
     let nextSettings: ReviewSettings | undefined;
     writeState((s) => {
       const next = addCustomMetric(s, metric);
@@ -313,7 +355,9 @@ export class LocalStorageReviewsAdapter implements IReviewsService {
     return nextSettings ?? defaultReviewSettings;
   }
 
-  async updateAlertSettings(alertSettings: AlertSettings): Promise<ReviewSettings> {
+  async updateAlertSettings(
+    alertSettings: AlertSettings,
+  ): Promise<ReviewSettings> {
     let nextSettings: ReviewSettings | undefined;
     writeState((s) => {
       const next = opUpdateAlertSettings(s, alertSettings);
@@ -323,7 +367,9 @@ export class LocalStorageReviewsAdapter implements IReviewsService {
     return nextSettings ?? defaultReviewSettings;
   }
 
-  async updateReflectionTemplates(templates: ReflectionTemplate): Promise<ReviewSettings> {
+  async updateReflectionTemplates(
+    templates: ReflectionTemplate,
+  ): Promise<ReviewSettings> {
     let nextSettings: ReviewSettings | undefined;
     writeState((s) => {
       const next = opUpdateReflectionTemplates(s, templates);

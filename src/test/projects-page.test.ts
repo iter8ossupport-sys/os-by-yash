@@ -110,12 +110,16 @@ describe("Projects Page — Data & Features", () => {
     const editedDoc1 = { ...doc1, title: "Architecture Spec v2" };
     saved = { ...saved, docs: [editedDoc1, doc2] };
     s = saveProject(s, saved);
-    expect(s.projects.find((p) => p.id === "proj-docs-test")!.docs![0]!.title).toBe("Architecture Spec v2");
+    expect(
+      s.projects.find((p) => p.id === "proj-docs-test")!.docs![0]!.title,
+    ).toBe("Architecture Spec v2");
 
     // Delete doc2
     saved = { ...saved, docs: [editedDoc1] };
     s = saveProject(s, saved);
-    expect(s.projects.find((p) => p.id === "proj-docs-test")!.docs).toHaveLength(1);
+    expect(
+      s.projects.find((p) => p.id === "proj-docs-test")!.docs,
+    ).toHaveLength(1);
   });
 
   it("4. Backward compatibility: existing projects without new fields load safely", () => {

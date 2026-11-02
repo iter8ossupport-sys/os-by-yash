@@ -49,17 +49,28 @@ import {
   getMonthRange,
 } from "@/lib/os/reviews/analytics";
 import type { DayRecord, PriorityId } from "@/lib/os/types";
-import { Badge, Button, Glass, PriorityIcon, Progress } from "@/components/os/ui";
+import {
+  Badge,
+  Button,
+  Glass,
+  PriorityIcon,
+  Progress,
+} from "@/components/os/ui";
 import { cn } from "@/lib/utils";
 
-export type AnalyticalSubView = "execution" | "outcomes" | "priorities" | "projects" | "improvements";
+export type AnalyticalSubView =
+  "execution" | "outcomes" | "priorities" | "projects" | "improvements";
 
 interface AnalyticsHubViewProps {
   initialSubView?: AnalyticalSubView | undefined;
   onNavigateToTab?: ((tab: string, date?: string) => void) | undefined;
 }
 
-const SUB_VIEWS: { id: AnalyticalSubView; label: string; icon: typeof Activity }[] = [
+const SUB_VIEWS: {
+  id: AnalyticalSubView;
+  label: string;
+  icon: typeof Activity;
+}[] = [
   { id: "execution", label: "Execution Analytics", icon: Activity },
   { id: "outcomes", label: "Outcomes & Yield", icon: Target },
   { id: "priorities", label: "Priorities & P2 A/B", icon: Layers },
@@ -77,20 +88,28 @@ export function AnalyticsHubView({
 
   const [subView, setSubView] = useState<AnalyticalSubView>(initialSubView);
   const [rangeWindow, setRangeWindow] = useState<RangeWindow>("14");
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    null,
+  );
 
   // Filter history records based on range window
   const filteredRecords = useMemo(() => {
-    let list = [...state.history].sort((a, b) => a.date.localeCompare(b.date));
+    const list = [...state.history].sort((a, b) =>
+      a.date.localeCompare(b.date),
+    );
     if (rangeWindow === "all") return list;
 
     if (rangeWindow === "month") {
       const monthInfo = getMonthRange(new Date());
-      return list.filter((r) => r.date >= monthInfo.startDate && r.date <= monthInfo.endDate);
+      return list.filter(
+        (r) => r.date >= monthInfo.startDate && r.date <= monthInfo.endDate,
+      );
     }
 
     const days = parseInt(rangeWindow, 10);
-    const cutoff = new Date(Date.now() - days * 864e5).toISOString().slice(0, 10);
+    const cutoff = new Date(Date.now() - days * 864e5)
+      .toISOString()
+      .slice(0, 10);
     return list.filter((r) => r.date >= cutoff);
   }, [state.history, rangeWindow]);
 
@@ -125,7 +144,13 @@ export function AnalyticsHubView({
 
     const start = filteredRecords[0]?.date ?? "";
     const end = filteredRecords[filteredRecords.length - 1]?.date ?? "";
-    const period = calculatePeriodSummary(filteredRecords, "weekly", "agg", start, end);
+    const period = calculatePeriodSummary(
+      filteredRecords,
+      "weekly",
+      "agg",
+      start,
+      end,
+    );
 
     let zeroOutcomeDays = 0;
     dailySummaries.forEach(({ summary }) => {
@@ -136,7 +161,9 @@ export function AnalyticsHubView({
 
     const outcomeYield =
       period.totalActualHours > 0
-        ? Math.round((period.outcomesAchievedTotal / period.totalActualHours) * 100) / 100
+        ? Math.round(
+            (period.outcomesAchievedTotal / period.totalActualHours) * 100,
+          ) / 100
         : 0;
 
     return {
@@ -174,7 +201,9 @@ export function AnalyticsHubView({
     return dailySummaries.map(({ date, summary }) => {
       const yieldRate =
         summary.totalActualHours > 0
-          ? Math.round((summary.outcomesAchieved / summary.totalActualHours) * 10) / 10
+          ? Math.round(
+              (summary.outcomesAchieved / summary.totalActualHours) * 10,
+            ) / 10
           : 0;
       return {
         date: date.slice(5),
@@ -246,7 +275,9 @@ export function AnalyticsHubView({
 
         {/* Date Scope Preset Filter */}
         <div className="flex items-center gap-1 bg-secondary/40 p-1 rounded-xl border border-glass-border">
-          <span className="text-[11px] text-muted-foreground px-2 font-medium">Window:</span>
+          <span className="text-[11px] text-muted-foreground px-2 font-medium">
+            Window:
+          </span>
           {(["7", "14", "30", "month", "all"] as RangeWindow[]).map((w) => (
             <button
               key={w}
@@ -262,12 +293,12 @@ export function AnalyticsHubView({
               {w === "7"
                 ? "7d"
                 : w === "14"
-                ? "14d"
-                : w === "30"
-                ? "30d"
-                : w === "month"
-                ? "Month"
-                : "All"}
+                  ? "14d"
+                  : w === "30"
+                    ? "30d"
+                    : w === "month"
+                      ? "Month"
+                      : "All"}
             </button>
           ))}
         </div>
@@ -286,7 +317,8 @@ export function AnalyticsHubView({
                 {aggregate.totalActualHours}h
               </div>
               <div className="text-[11px] text-muted-foreground mt-0.5">
-                {aggregate.totalPlannedHours}h planned · {filteredRecords.length} recorded days
+                {aggregate.totalPlannedHours}h planned ·{" "}
+                {filteredRecords.length} recorded days
               </div>
             </Glass>
 
@@ -298,7 +330,8 @@ export function AnalyticsHubView({
                 {aggregate.taskCompletionRate}%
               </div>
               <div className="text-[11px] text-muted-foreground mt-0.5">
-                {aggregate.totalTasksDone} / {aggregate.totalTasksPlanned} tasks done
+                {aggregate.totalTasksDone} / {aggregate.totalTasksPlanned} tasks
+                done
               </div>
             </Glass>
 
@@ -308,7 +341,11 @@ export function AnalyticsHubView({
               </div>
               <div className="font-display text-2xl font-bold mt-1 text-foreground">
                 {aggregate.totalPlannedHours > 0
-                  ? Math.round((aggregate.totalActualHours / aggregate.totalPlannedHours) * 100)
+                  ? Math.round(
+                      (aggregate.totalActualHours /
+                        aggregate.totalPlannedHours) *
+                        100,
+                    )
                   : 100}
                 %
               </div>
@@ -323,7 +360,10 @@ export function AnalyticsHubView({
               </div>
               <div className="font-display text-2xl font-bold mt-1 text-violet">
                 {filteredRecords.length > 0
-                  ? Math.round((aggregate.totalActualHours / filteredRecords.length) * 10) / 10
+                  ? Math.round(
+                      (aggregate.totalActualHours / filteredRecords.length) *
+                        10,
+                    ) / 10
                   : 0}
                 h / day
               </div>
@@ -337,9 +377,12 @@ export function AnalyticsHubView({
           <Glass className="p-6">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div>
-                <h3 className="text-base font-semibold">Planned vs. Actual Daily Hours</h3>
+                <h3 className="text-base font-semibold">
+                  Planned vs. Actual Daily Hours
+                </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Visualizing execution realism and workload distribution over time
+                  Visualizing execution realism and workload distribution over
+                  time
                 </p>
               </div>
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -354,20 +397,65 @@ export function AnalyticsHubView({
 
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={executionChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <AreaChart
+                  data={executionChartData}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
                   <defs>
-                    <linearGradient id="execPlannedGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
-                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                    <linearGradient
+                      id="execPlannedGrad"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="var(--primary)"
+                        stopOpacity={0.3}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--primary)"
+                        stopOpacity={0}
+                      />
                     </linearGradient>
-                    <linearGradient id="execActualGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--cyan)" stopOpacity={0.4} />
-                      <stop offset="95%" stopColor="var(--cyan)" stopOpacity={0} />
+                    <linearGradient
+                      id="execActualGrad"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop
+                        offset="5%"
+                        stopColor="var(--cyan)"
+                        stopOpacity={0.4}
+                      />
+                      <stop
+                        offset="95%"
+                        stopColor="var(--cyan)"
+                        stopOpacity={0}
+                      />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="date" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} />
-                  <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} unit="h" />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--border)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="date"
+                    stroke="var(--muted-foreground)"
+                    fontSize={12}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    stroke="var(--muted-foreground)"
+                    fontSize={12}
+                    tickLine={false}
+                    unit="h"
+                  />
                   <Tooltip
                     cursor={{ stroke: "rgba(255,255,255,0.1)" }}
                     contentStyle={{
@@ -376,7 +464,7 @@ export function AnalyticsHubView({
                       borderRadius: 12,
                       boxShadow: "var(--shadow-glass)",
                     }}
-                    formatter={(val: any) => [`${val ?? 0}h`, ""]}
+                    formatter={(val: unknown) => [`${val ?? 0}h`, ""]}
                   />
                   <Area
                     type="monotone"
@@ -426,7 +514,8 @@ export function AnalyticsHubView({
                 {aggregate.outcomesRate}%
               </div>
               <div className="text-[11px] text-muted-foreground mt-0.5">
-                {aggregate.totalOutcomesAchieved} / {aggregate.totalOutcomesPlanned} targets hit
+                {aggregate.totalOutcomesAchieved} /{" "}
+                {aggregate.totalOutcomesPlanned} targets hit
               </div>
             </Glass>
 
@@ -449,7 +538,9 @@ export function AnalyticsHubView({
               <div
                 className={cn(
                   "font-display text-2xl font-bold mt-1",
-                  aggregate.zeroOutcomeDays > 0 ? "text-warning" : "text-success",
+                  aggregate.zeroOutcomeDays > 0
+                    ? "text-warning"
+                    : "text-success",
                 )}
               >
                 {aggregate.zeroOutcomeDays}
@@ -464,19 +555,38 @@ export function AnalyticsHubView({
           <Glass className="p-6">
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div>
-                <h3 className="text-base font-semibold">Deliverable Outcomes & Yield Trend</h3>
+                <h3 className="text-base font-semibold">
+                  Deliverable Outcomes & Yield Trend
+                </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Separating mere busywork from concrete, tangible deliverable outcomes
+                  Separating mere busywork from concrete, tangible deliverable
+                  outcomes
                 </p>
               </div>
             </div>
 
             <div className="h-72 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={outcomesChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="date" stroke="var(--muted-foreground)" fontSize={12} tickLine={false} />
-                  <YAxis stroke="var(--muted-foreground)" fontSize={12} tickLine={false} />
+                <BarChart
+                  data={outcomesChartData}
+                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--border)"
+                    vertical={false}
+                  />
+                  <XAxis
+                    dataKey="date"
+                    stroke="var(--muted-foreground)"
+                    fontSize={12}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    stroke="var(--muted-foreground)"
+                    fontSize={12}
+                    tickLine={false}
+                  />
                   <Tooltip
                     cursor={{ fill: "rgba(255,255,255,0.04)" }}
                     contentStyle={{
@@ -486,7 +596,12 @@ export function AnalyticsHubView({
                       boxShadow: "var(--shadow-glass)",
                     }}
                   />
-                  <Bar dataKey="Outcomes" fill="var(--cyan)" radius={[6, 6, 0, 0]} barSize={28} />
+                  <Bar
+                    dataKey="Outcomes"
+                    fill="var(--cyan)"
+                    radius={[6, 6, 0, 0]}
+                    barSize={28}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -510,13 +625,17 @@ export function AnalyticsHubView({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <PriorityIcon id={p.id} className="h-5 w-5" />
-                      <span className="font-semibold text-sm">#{p.id} {p.name}</span>
+                      <span className="font-semibold text-sm">
+                        #{p.id} {p.name}
+                      </span>
                     </div>
                     <Badge className="font-mono text-xs">{pct}%</Badge>
                   </div>
 
                   <div className="my-4">
-                    <div className="font-display text-3xl font-bold text-foreground">{actual}h</div>
+                    <div className="font-display text-3xl font-bold text-foreground">
+                      {actual}h
+                    </div>
                     <div className="text-xs text-muted-foreground mt-0.5">
                       Milestone: {p.milestone || "General"}
                     </div>
@@ -532,12 +651,17 @@ export function AnalyticsHubView({
           <Glass className="p-6">
             <div className="flex items-center justify-between mb-2">
               <div>
-                <h3 className="text-base font-semibold">Priority 2 Workstream Isolation · Strict A / B Separation</h3>
+                <h3 className="text-base font-semibold">
+                  Priority 2 Workstream Isolation · Strict A / B Separation
+                </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  Verifying that trading sessions (Workstream A) never cannibalize software development (Workstream B).
+                  Verifying that trading sessions (Workstream A) never
+                  cannibalize software development (Workstream B).
                 </p>
               </div>
-              <Badge className="border-cyan/30 text-cyan bg-cyan/10">No Cross-Contamination</Badge>
+              <Badge className="border-cyan/30 text-cyan bg-cyan/10">
+                No Cross-Contamination
+              </Badge>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 mt-4">
@@ -547,20 +671,25 @@ export function AnalyticsHubView({
                     <span className="h-2.5 w-2.5 rounded-full bg-cyan" />
                     Workstream A · Cashflow / Trading Execution
                   </span>
-                  <span className="font-display text-sm">{aggregate.p2HoursA}h</span>
+                  <span className="font-display text-sm">
+                    {aggregate.p2HoursA}h
+                  </span>
                 </div>
                 <Progress
                   value={
                     aggregate.p2HoursA + aggregate.p2HoursB > 0
                       ? Math.round(
-                          (aggregate.p2HoursA / (aggregate.p2HoursA + aggregate.p2HoursB)) * 100,
+                          (aggregate.p2HoursA /
+                            (aggregate.p2HoursA + aggregate.p2HoursB)) *
+                            100,
                         )
                       : 0
                   }
                   className="h-2"
                 />
                 <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
-                  Focus: LBES market sessions, liquidity analysis, execution journal. Generates operating cashflow.
+                  Focus: LBES market sessions, liquidity analysis, execution
+                  journal. Generates operating cashflow.
                 </p>
               </div>
 
@@ -570,20 +699,25 @@ export function AnalyticsHubView({
                     <span className="h-2.5 w-2.5 rounded-full bg-primary" />
                     Workstream B · Fintech Product & Engineering
                   </span>
-                  <span className="font-display text-sm">{aggregate.p2HoursB}h</span>
+                  <span className="font-display text-sm">
+                    {aggregate.p2HoursB}h
+                  </span>
                 </div>
                 <Progress
                   value={
                     aggregate.p2HoursA + aggregate.p2HoursB > 0
                       ? Math.round(
-                          (aggregate.p2HoursB / (aggregate.p2HoursA + aggregate.p2HoursB)) * 100,
+                          (aggregate.p2HoursB /
+                            (aggregate.p2HoursA + aggregate.p2HoursB)) *
+                            100,
                         )
                       : 0
                   }
                   className="h-2"
                 />
                 <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed">
-                  Focus: Yash OS core engine, automated tools, SaaS products. Generates lasting enterprise equity.
+                  Focus: Yash OS core engine, automated tools, SaaS products.
+                  Generates lasting enterprise equity.
                 </p>
               </div>
             </div>
@@ -605,12 +739,16 @@ export function AnalyticsHubView({
                     : "hover:bg-secondary/40",
                 )}
                 onClick={() =>
-                  setSelectedProjectId(selectedProjectId === project.id ? null : project.id)
+                  setSelectedProjectId(
+                    selectedProjectId === project.id ? null : project.id,
+                  )
                 }
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="font-semibold text-sm truncate">{project.name}</span>
+                    <span className="font-semibold text-sm truncate">
+                      {project.name}
+                    </span>
                     <Badge
                       className={cn(
                         "text-[10px]",
@@ -635,14 +773,20 @@ export function AnalyticsHubView({
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">Task Completion</span>
+                    <span className="text-muted-foreground">
+                      Task Completion
+                    </span>
                     <span className="font-semibold text-cyan">
-                      {performance.taskCompletionRate}% ({performance.tasksDoneTotal}/{performance.tasksPlannedTotal})
+                      {performance.taskCompletionRate}% (
+                      {performance.tasksDoneTotal}/
+                      {performance.tasksPlannedTotal})
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground">Deliverables</span>
-                    <span className="font-semibold text-foreground">{performance.outputsCount} outputs</span>
+                    <span className="font-semibold text-foreground">
+                      {performance.outputsCount} outputs
+                    </span>
                   </div>
                 </div>
               </Glass>
@@ -653,7 +797,9 @@ export function AnalyticsHubView({
           {selectedProjectId && (
             <Glass className="p-6">
               {(() => {
-                const target = projectSummaries.find((p) => p.project.id === selectedProjectId);
+                const target = projectSummaries.find(
+                  (p) => p.project.id === selectedProjectId,
+                );
                 if (!target) return null;
                 const { project, performance } = target;
 
@@ -665,8 +811,9 @@ export function AnalyticsHubView({
                           Project Audit Trail · {project.name}
                         </h3>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          Active across {performance.activeDaysCount} review days (
-                          {performance.firstActiveDate || "N/A"} to {performance.lastActiveDate || "N/A"})
+                          Active across {performance.activeDaysCount} review
+                          days ({performance.firstActiveDate || "N/A"} to{" "}
+                          {performance.lastActiveDate || "N/A"})
                         </p>
                       </div>
                       <Button
@@ -680,7 +827,8 @@ export function AnalyticsHubView({
 
                     {performance.outputs.length === 0 ? (
                       <p className="text-xs text-muted-foreground italic py-4">
-                        No recorded deliverables logged for this project in the selected time window.
+                        No recorded deliverables logged for this project in the
+                        selected time window.
                       </p>
                     ) : (
                       <div className="space-y-2">
@@ -692,12 +840,18 @@ export function AnalyticsHubView({
                             <div className="flex items-center justify-between text-muted-foreground font-mono text-[11px] mb-1">
                               <span>{out.date}</span>
                               {out.workstream && (
-                                <Badge className="text-[10px]">Workstream {out.workstream}</Badge>
+                                <Badge className="text-[10px]">
+                                  Workstream {out.workstream}
+                                </Badge>
                               )}
                             </div>
-                            <div className="font-semibold text-foreground">{out.title}</div>
+                            <div className="font-semibold text-foreground">
+                              {out.title}
+                            </div>
                             {out.text && (
-                              <p className="text-muted-foreground mt-1 leading-relaxed">{out.text}</p>
+                              <p className="text-muted-foreground mt-1 leading-relaxed">
+                                {out.text}
+                              </p>
                             )}
                           </div>
                         ))}
@@ -767,7 +921,9 @@ export function AnalyticsHubView({
           <Glass className="p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-semibold">Continuous Improvement Closed Loop</h3>
+                <h3 className="text-base font-semibold">
+                  Continuous Improvement Closed Loop
+                </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   PRE-THINK → ACT → POST-THINK → ANALYZE → IMPROVE → NEXT PLAN
                 </p>
@@ -785,7 +941,9 @@ export function AnalyticsHubView({
 
             <div className="grid gap-3 md:grid-cols-4 text-xs">
               <div className="rounded-2xl border border-glass-border bg-secondary/30 p-3.5">
-                <div className="font-semibold text-muted-foreground">1. Proposed</div>
+                <div className="font-semibold text-muted-foreground">
+                  1. Proposed
+                </div>
                 <div className="font-display text-xl font-bold text-foreground mt-1">
                   {improvementStats.proposed}
                 </div>
@@ -795,7 +953,9 @@ export function AnalyticsHubView({
               </div>
 
               <div className="rounded-2xl border border-glass-border bg-secondary/30 p-3.5">
-                <div className="font-semibold text-muted-foreground">2. Approved</div>
+                <div className="font-semibold text-muted-foreground">
+                  2. Approved
+                </div>
                 <div className="font-display text-xl font-bold text-cyan mt-1">
                   {improvementStats.approved}
                 </div>
@@ -805,7 +965,9 @@ export function AnalyticsHubView({
               </div>
 
               <div className="rounded-2xl border border-glass-border bg-secondary/30 p-3.5">
-                <div className="font-semibold text-muted-foreground">3. Implemented</div>
+                <div className="font-semibold text-muted-foreground">
+                  3. Implemented
+                </div>
                 <div className="font-display text-xl font-bold text-primary mt-1">
                   {improvementStats.implemented}
                 </div>
@@ -815,7 +977,9 @@ export function AnalyticsHubView({
               </div>
 
               <div className="rounded-2xl border border-glass-border bg-secondary/30 p-3.5">
-                <div className="font-semibold text-muted-foreground">4. Evaluated & Promoted</div>
+                <div className="font-semibold text-muted-foreground">
+                  4. Evaluated & Promoted
+                </div>
                 <div className="font-display text-xl font-bold text-success mt-1">
                   {improvementStats.evaluated}
                 </div>

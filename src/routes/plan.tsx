@@ -1,22 +1,65 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, ChevronDown, Flag, AlertTriangle, FolderGit2, RefreshCw, Sparkles } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  Check,
+  ChevronDown,
+  Flag,
+  AlertTriangle,
+  FolderGit2,
+  RefreshCw,
+  Sparkles,
+  BookMarked,
+  BookOpen,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useOS, fmtMin } from "@/lib/os/store";
 import { approvePlan, setActiveProject } from "@/lib/os/logic";
 import { newDraft, recommendOutcomes, recommendTasks } from "@/lib/os/seed";
-import type { DayType, Energy, Plan, PriorityId, Task } from "@/lib/os/types";
+import type {
+  DayType,
+  Energy,
+  KnowledgeItem,
+  Plan,
+  PriorityId,
+  Task,
+} from "@/lib/os/types";
 import { cn } from "@/lib/utils";
-import { Badge, Button, Glass, Input, Label, PageHeader, PriorityIcon, Segmented, Textarea, priorityTone } from "@/components/os/ui";
+import {
+  Badge,
+  Button,
+  Glass,
+  Input,
+  Label,
+  PageHeader,
+  PriorityIcon,
+  Segmented,
+  Textarea,
+  priorityTone,
+} from "@/components/os/ui";
 import { DurationInput } from "@/components/os/DurationInput";
+import { KnowledgeSelectModal } from "@/components/os/KnowledgeSelectModal";
+import { KnowledgeViewerModal } from "@/components/os/KnowledgeViewerModal";
+import { formatBadgeClass, getKnowledgeFormat } from "@/lib/os/knowledge";
 
 export const Route = createFileRoute("/plan")({
   head: () => ({
     meta: [
       { title: "Plan — Yash OS" },
-      { name: "description", content: "Seven-step workflow to turn daily reality into an approved plan." },
+      {
+        name: "description",
+        content:
+          "Seven-step workflow to turn daily reality into an approved plan.",
+      },
       { property: "og:title", content: "Plan — Yash OS" },
-      { property: "og:description", content: "Turn reality into an approved plan." },
+      {
+        property: "og:description",
+        content: "Turn reality into an approved plan.",
+      },
     ],
   }),
   component: PlanPage,
@@ -31,7 +74,12 @@ const STAGES = [
   ["Planned Workload", "Select & organise tasks"],
   ["Final Approval", "Confirm and save plan"],
 ] as const;
-const DAY_TYPES = ["College Day", "Non-College Day", "Weekend/Holiday", "Custom"] as const;
+const DAY_TYPES = [
+  "College Day",
+  "Non-College Day",
+  "Weekend/Holiday",
+  "Custom",
+] as const;
 const ENERGY = ["Low", "Medium", "High"] as const;
 const IDS: PriorityId[] = [1, 2, 3];
 
@@ -41,24 +89,51 @@ function PlanPage() {
   const draft = state.draft;
   const stage = state.draftStage;
 
-  const setDraft = (fn: (d: Plan) => Plan) => update((s) => ({ ...s, draft: s.draft ? fn(s.draft) : s.draft }));
+  const setDraft = (fn: (d: Plan) => Plan) =>
+    update((s) => ({ ...s, draft: s.draft ? fn(s.draft) : s.draft }));
   const setStage = (n: number) => update((s) => ({ ...s, draftStage: n }));
   const setTask = (id: string, patch: Partial<Task>) =>
-    setDraft((d) => ({ ...d, tasks: d.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)) }));
+    setDraft((d) => ({
+      ...d,
+      tasks: d.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+    }));
+
+  const [linkingOutcomePriorityId, setLinkingOutcomePriorityId] =
+    useState<PriorityId | null>(null);
+  const [linkingTaskId, setLinkingTaskId] = useState<string | null>(null);
+  const [viewingKnowledge, setViewingKnowledge] = useState<
+    KnowledgeItem[] | null
+  >(null);
 
   if (!draft) {
     return (
       <div>
-        <PageHeader eyebrow="Pre-think" title="Plan — 7 Step Workflow" subtitle="Turn reality into an approved plan." />
+        <PageHeader
+          eyebrow="Pre-think"
+          title="Plan — 7 Step Workflow"
+          subtitle="Turn reality into an approved plan."
+        />
         <Glass className="p-8 text-center">
-          <h2 className="text-xl font-semibold">{state.plan ? "Today's plan is approved." : "No plan in progress."}</h2>
+          <h2 className="text-xl font-semibold">
+            {state.plan ? "Today's plan is approved." : "No plan in progress."}
+          </h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            {state.plan ? "Starting a new plan will replace the approved one once you approve it." : "Start with your daily context."}
+            {state.plan
+              ? "Starting a new plan will replace the approved one once you approve it."
+              : "Start with your daily context."}
           </p>
           <Button
             variant="primary"
             className="mt-6"
-            onClick={() => update((s) => ({ ...s, draft: newDraft({ hours: s.prefs.dayTypeHours["Non-College Day"] }), draftStage: 1 }))}
+            onClick={() =>
+              update((s) => ({
+                ...s,
+                draft: newDraft({
+                  hours: s.prefs.dayTypeHours["Non-College Day"],
+                }),
+                draftStage: 1,
+              }))
+            }
           >
             <Sparkles className="h-4 w-4" /> Start planning
           </Button>
@@ -77,13 +152,22 @@ function PlanPage() {
   });
 
   const canNext =
-    stage === 4 ? IDS.every((i) => draft.outcomes[i].trim()) :
-    stage === 5 ? draft.tasks.length > 0 :
-    stage === 6 ? perPriorityOk : true;
+    stage === 4
+      ? IDS.every((i) => draft.outcomes[i].trim())
+      : stage === 5
+        ? draft.tasks.length > 0
+        : stage === 6
+          ? perPriorityOk
+          : true;
 
   const next = () => {
-    if (stage === 3 && !IDS.some((i) => draft.outcomes[i])) setDraft((d) => ({ ...d, outcomes: recommendOutcomes(state.priorities) }));
-    if (stage === 4 && draft.tasks.length === 0) setDraft((d) => ({ ...d, tasks: recommendTasks(state.priorities) }));
+    if (stage === 3 && !IDS.some((i) => draft.outcomes[i]))
+      setDraft((d) => ({
+        ...d,
+        outcomes: recommendOutcomes(state.priorities),
+      }));
+    if (stage === 4 && draft.tasks.length === 0)
+      setDraft((d) => ({ ...d, tasks: recommendTasks(state.priorities) }));
     setStage(stage + 1);
   };
 
@@ -94,10 +178,20 @@ function PlanPage() {
   };
 
   // Reordering helpers
-  const movePriorityTask = (priorityId: PriorityId, fromIdx: number, toIdx: number) => {
+  const movePriorityTask = (
+    priorityId: PriorityId,
+    fromIdx: number,
+    toIdx: number,
+  ) => {
     setDraft((d) => {
       const pTasks = d.tasks.filter((t) => t.priorityId === priorityId);
-      if (fromIdx < 0 || toIdx < 0 || fromIdx >= pTasks.length || toIdx >= pTasks.length) return d;
+      if (
+        fromIdx < 0 ||
+        toIdx < 0 ||
+        fromIdx >= pTasks.length ||
+        toIdx >= pTasks.length
+      )
+        return d;
       const taskA = pTasks[fromIdx];
       const taskB = pTasks[toIdx];
       if (!taskA || !taskB) return d;
@@ -135,7 +229,13 @@ function PlanPage() {
         title="Plan — 7 Step Workflow"
         subtitle="Turn reality into an approved plan."
         actions={
-          <Button variant="ghost" size="sm" onClick={() => update((s) => ({ ...s, draft: null, draftStage: 1 }))}>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() =>
+              update((s) => ({ ...s, draft: null, draftStage: 1 }))
+            }
+          >
             Discard draft
           </Button>
         }
@@ -152,20 +252,33 @@ function PlanPage() {
                     onClick={() => setStage(n)}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-2xl p-2.5 text-left transition",
-                      n === stage ? "bg-gradient-primary text-primary-foreground glow" : n < stage ? "hover:bg-accent" : "opacity-50"
+                      n === stage
+                        ? "bg-gradient-primary text-primary-foreground glow"
+                        : n < stage
+                          ? "hover:bg-accent"
+                          : "opacity-50",
                     )}
                   >
                     <span
                       className={cn(
                         "flex h-8 w-8 shrink-0 items-center justify-center rounded-full border text-xs font-semibold",
-                        n === stage ? "border-primary-foreground/50" : "border-glass-border"
+                        n === stage
+                          ? "border-primary-foreground/50"
+                          : "border-glass-border",
                       )}
                     >
                       {n < stage ? <Check className="h-3.5 w-3.5" /> : n}
                     </span>
                     <span>
                       <span className="block text-sm font-medium">{t}</span>
-                      <span className={cn("block text-[11px]", n === stage ? "opacity-80" : "text-muted-foreground")}>{sub}</span>
+                      <span
+                        className={cn(
+                          "block text-[11px]",
+                          n === stage ? "opacity-80" : "text-muted-foreground",
+                        )}
+                      >
+                        {sub}
+                      </span>
                     </span>
                   </button>
                 </li>
@@ -177,7 +290,9 @@ function PlanPage() {
         <Glass className="p-6" key={stage}>
           <div className="fade-up">
             <div className="mb-6 flex items-center justify-between gap-3">
-              <h2 className="text-xl font-semibold">{STAGES[stage - 1]?.[0]}</h2>
+              <h2 className="text-xl font-semibold">
+                {STAGES[stage - 1]?.[0]}
+              </h2>
               <Badge>Step {stage} of 7</Badge>
             </div>
 
@@ -190,7 +305,12 @@ function PlanPage() {
                     <Input
                       type="date"
                       value={ctx.date}
-                      onChange={(e) => setDraft((d) => ({ ...d, context: { ...d.context, date: e.target.value } }))}
+                      onChange={(e) =>
+                        setDraft((d) => ({
+                          ...d,
+                          context: { ...d.context, date: e.target.value },
+                        }))
+                      }
                     />
                   </div>
                 </div>
@@ -200,14 +320,23 @@ function PlanPage() {
                     value={ctx.dayType}
                     options={DAY_TYPES}
                     onChange={(v: DayType) =>
-                      setDraft((d) => ({ ...d, context: { ...d.context, dayType: v, hours: state.prefs.dayTypeHours[v] } }))
+                      setDraft((d) => ({
+                        ...d,
+                        context: {
+                          ...d.context,
+                          dayType: v,
+                          hours: state.prefs.dayTypeHours[v],
+                        },
+                      }))
                     }
                   />
                 </div>
                 <div>
                   <div className="flex justify-between">
                     <Label>Available usable work hours</Label>
-                    <span className="text-sm font-semibold">{ctx.hours} hours</span>
+                    <span className="text-sm font-semibold">
+                      {ctx.hours} hours
+                    </span>
                   </div>
                   <input
                     type="range"
@@ -217,7 +346,12 @@ function PlanPage() {
                     value={ctx.hours}
                     aria-label="Available hours"
                     className="w-full"
-                    onChange={(e) => setDraft((d) => ({ ...d, context: { ...d.context, hours: +e.target.value } }))}
+                    onChange={(e) =>
+                      setDraft((d) => ({
+                        ...d,
+                        context: { ...d.context, hours: +e.target.value },
+                      }))
+                    }
                   />
                 </div>
                 <div>
@@ -225,7 +359,12 @@ function PlanPage() {
                   <Segmented
                     value={ctx.energy}
                     options={ENERGY}
-                    onChange={(v: Energy) => setDraft((d) => ({ ...d, context: { ...d.context, energy: v } }))}
+                    onChange={(v: Energy) =>
+                      setDraft((d) => ({
+                        ...d,
+                        context: { ...d.context, energy: v },
+                      }))
+                    }
                   />
                 </div>
                 <div>
@@ -233,7 +372,12 @@ function PlanPage() {
                   <Textarea
                     placeholder="e.g. College, meetings, family, travel…"
                     value={ctx.commitments}
-                    onChange={(e) => setDraft((d) => ({ ...d, context: { ...d.context, commitments: e.target.value } }))}
+                    onChange={(e) =>
+                      setDraft((d) => ({
+                        ...d,
+                        context: { ...d.context, commitments: e.target.value },
+                      }))
+                    }
                   />
                 </div>
               </div>
@@ -243,16 +387,23 @@ function PlanPage() {
             {stage === 2 && (
               <div className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Review and verify your active projects, milestones, and bottlenecks under the three permanent priorities.
+                  Review and verify your active projects, milestones, and
+                  bottlenecks under the three permanent priorities.
                 </p>
                 {state.priorities.map((p) => {
-                  const eligibleProjects = state.projects.filter((proj) => proj.priorityId === p.id);
+                  const eligibleProjects = state.projects.filter(
+                    (proj) => proj.priorityId === p.id,
+                  );
                   return (
                     <div
                       key={p.id}
                       className={cn(
                         "rounded-2xl border border-glass-border bg-secondary/40 p-5 shadow-sm transition hover:border-primary/40",
-                        p.id === 1 ? "border-l-4 border-l-p1" : p.id === 2 ? "border-l-4 border-l-p2" : "border-l-4 border-l-p3"
+                        p.id === 1
+                          ? "border-l-4 border-l-p1"
+                          : p.id === 2
+                            ? "border-l-4 border-l-p2"
+                            : "border-l-4 border-l-p3",
                       )}
                     >
                       {/* Priority Header */}
@@ -261,10 +412,16 @@ function PlanPage() {
                           <PriorityIcon id={p.id} />
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Priority {p.id}</span>
-                              <h3 className="font-display text-base font-semibold">{p.name}</h3>
+                              <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                                Priority {p.id}
+                              </span>
+                              <h3 className="font-display text-base font-semibold">
+                                {p.name}
+                              </h3>
                             </div>
-                            <p className="text-xs text-muted-foreground">{p.purpose}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {p.purpose}
+                            </p>
                           </div>
                         </div>
                         <Badge>{p.status}</Badge>
@@ -275,20 +432,38 @@ function PlanPage() {
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div className="flex items-center gap-2">
                             <FolderGit2 className="h-4 w-4 text-cyan" />
-                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Active Project:</span>
-                            <span className="font-medium text-foreground">{p.project || "No active project"}</span>
+                            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                              Active Project:
+                            </span>
+                            <span className="font-medium text-foreground">
+                              {p.project || "No active project"}
+                            </span>
                           </div>
                           {eligibleProjects.length > 0 && (
                             <div className="flex items-center gap-2">
-                              <Label className="mb-0 text-[11px]">Switch project:</Label>
+                              <Label className="mb-0 text-[11px]">
+                                Switch project:
+                              </Label>
                               <select
                                 value={p.activeProjectId || ""}
                                 aria-label={`Select active project for ${p.name}`}
-                                onChange={(e) => update((s) => setActiveProject(s, p.id, e.target.value || null))}
+                                onChange={(e) =>
+                                  update((s) =>
+                                    setActiveProject(
+                                      s,
+                                      p.id,
+                                      e.target.value || null,
+                                    ),
+                                  )
+                                }
                                 className="h-8 rounded-lg border border-input bg-secondary/80 px-2 text-xs font-medium text-foreground outline-none transition focus:border-ring"
                               >
                                 {eligibleProjects.map((proj) => (
-                                  <option key={proj.id} value={proj.id} className="bg-popover text-foreground">
+                                  <option
+                                    key={proj.id}
+                                    value={proj.id}
+                                    className="bg-popover text-foreground"
+                                  >
                                     {proj.name} ({proj.status})
                                   </option>
                                 ))}
@@ -305,7 +480,9 @@ function PlanPage() {
                             <Flag className="h-3.5 w-3.5" />
                             <span>Current Milestone</span>
                           </div>
-                          <div className="text-xs text-foreground/90">{p.milestone || "None set"}</div>
+                          <div className="text-xs text-foreground/90">
+                            {p.milestone || "None set"}
+                          </div>
                         </div>
 
                         <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-3">
@@ -313,13 +490,18 @@ function PlanPage() {
                             <AlertTriangle className="h-3.5 w-3.5" />
                             <span>Main Bottleneck</span>
                           </div>
-                          <div className="text-xs text-foreground/90">{p.bottleneck || "No bottleneck specified"}</div>
+                          <div className="text-xs text-foreground/90">
+                            {p.bottleneck || "No bottleneck specified"}
+                          </div>
                         </div>
                       </div>
                     </div>
                   );
                 })}
-                <p className="text-xs text-muted-foreground">Manage your portfolio in Projects or edit foundational goals in Settings.</p>
+                <p className="text-xs text-muted-foreground">
+                  Manage your portfolio in Projects or edit foundational goals
+                  in Settings.
+                </p>
               </div>
             )}
 
@@ -333,7 +515,15 @@ function PlanPage() {
                     ["Remaining", +(ctx.hours - allocated).toFixed(1)],
                   ].map(([l, v]) => (
                     <div key={l} className="rounded-2xl bg-secondary/40 p-4">
-                      <div className={cn("font-display text-2xl font-semibold", l === "Remaining" && v !== undefined && +v < 0 && "text-destructive")}>
+                      <div
+                        className={cn(
+                          "font-display text-2xl font-semibold",
+                          l === "Remaining" &&
+                            v !== undefined &&
+                            +v < 0 &&
+                            "text-destructive",
+                        )}
+                      >
                         {v}h
                       </div>
                       <div className="text-xs text-muted-foreground">{l}</div>
@@ -346,7 +536,9 @@ function PlanPage() {
                     <div className="flex-1">
                       <div className="flex justify-between text-sm">
                         <span>{p.name}</span>
-                        <span className="font-semibold">{draft.allocation[p.id]}h</span>
+                        <span className="font-semibold">
+                          {draft.allocation[p.id]}h
+                        </span>
                       </div>
                       <input
                         type="range"
@@ -356,12 +548,24 @@ function PlanPage() {
                         value={draft.allocation[p.id]}
                         aria-label={`${p.name} hours`}
                         className="w-full"
-                        onChange={(e) => setDraft((d) => ({ ...d, allocation: { ...d.allocation, [p.id]: +e.target.value } }))}
+                        onChange={(e) =>
+                          setDraft((d) => ({
+                            ...d,
+                            allocation: {
+                              ...d.allocation,
+                              [p.id]: +e.target.value,
+                            },
+                          }))
+                        }
                       />
                     </div>
                   </div>
                 ))}
-                {allocated > ctx.hours && <p className="text-sm text-destructive">You've allocated more than your available hours.</p>}
+                {allocated > ctx.hours && (
+                  <p className="text-sm text-destructive">
+                    You've allocated more than your available hours.
+                  </p>
+                )}
               </div>
             )}
 
@@ -369,27 +573,109 @@ function PlanPage() {
             {stage === 4 && (
               <div className="space-y-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm text-muted-foreground">Proposed from your project context and milestones. Edit before approving.</p>
-                  <Button size="sm" onClick={() => setDraft((d) => ({ ...d, outcomes: recommendOutcomes(state.priorities) }))}>
+                  <p className="text-sm text-muted-foreground">
+                    Proposed from your project context and milestones. Edit
+                    before approving.
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      setDraft((d) => ({
+                        ...d,
+                        outcomes: recommendOutcomes(state.priorities),
+                      }))
+                    }
+                  >
                     <RefreshCw className="h-3.5 w-3.5" />
                     Regenerate
                   </Button>
                 </div>
-                {state.priorities.map((p) => (
-                  <div key={p.id} className="flex gap-4">
-                    <PriorityIcon id={p.id} />
-                    <div className="flex-1">
-                      <Label>
-                        #{p.id} {p.name} — {draft.allocation[p.id]}h
-                      </Label>
-                      <Textarea
-                        rows={2}
-                        value={draft.outcomes[p.id]}
-                        onChange={(e) => setDraft((d) => ({ ...d, outcomes: { ...d.outcomes, [p.id]: e.target.value } }))}
-                      />
+                {state.priorities.map((p) => {
+                  const linkedKIds = draft.outcomeKnowledgeIds?.[p.id] || [];
+                  const linkedItems = state.knowledge.filter((k) =>
+                    linkedKIds.includes(k.id),
+                  );
+
+                  return (
+                    <div key={p.id} className="flex gap-4">
+                      <PriorityIcon id={p.id} />
+                      <div className="flex-1 space-y-2">
+                        <Label>
+                          #{p.id} {p.name} — {draft.allocation[p.id]}h
+                        </Label>
+                        <Textarea
+                          rows={2}
+                          value={draft.outcomes[p.id]}
+                          onChange={(e) =>
+                            setDraft((d) => ({
+                              ...d,
+                              outcomes: {
+                                ...d.outcomes,
+                                [p.id]: e.target.value,
+                              },
+                            }))
+                          }
+                        />
+
+                        {/* Linked Knowledge for this outcome */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            {linkedItems.map((k) => {
+                              const fmt = getKnowledgeFormat(k);
+                              return (
+                                <span
+                                  key={k.id}
+                                  className={cn(
+                                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition cursor-pointer hover:brightness-110",
+                                    formatBadgeClass(fmt),
+                                  )}
+                                  onClick={() => setViewingKnowledge([k])}
+                                  title="Click to view details"
+                                >
+                                  <BookOpen className="h-3 w-3" />
+                                  <span className="max-w-[150px] truncate">
+                                    {k.title}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDraft((d) => ({
+                                        ...d,
+                                        outcomeKnowledgeIds: {
+                                          ...(d.outcomeKnowledgeIds || {}),
+                                          [p.id]: (
+                                            d.outcomeKnowledgeIds?.[p.id] || []
+                                          ).filter((id) => id !== k.id),
+                                        },
+                                      }));
+                                    }}
+                                    className="ml-1 hover:text-destructive"
+                                    title="Unlink"
+                                  >
+                                    <X className="h-2.5 w-2.5" />
+                                  </button>
+                                </span>
+                              );
+                            })}
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="ghost"
+                            className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                            onClick={() => setLinkingOutcomePriorityId(p.id)}
+                          >
+                            <BookMarked className="h-3 w-3 mr-1" />
+                            {linkedItems.length > 0
+                              ? "Edit Knowledge Reference"
+                              : "+ Link Knowledge"}
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -397,8 +683,19 @@ function PlanPage() {
             {stage === 5 && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="text-sm text-muted-foreground">Three proposed tasks per priority (template suggestions — AI-ready).</p>
-                  <Button size="sm" onClick={() => setDraft((d) => ({ ...d, tasks: recommendTasks(state.priorities) }))}>
+                  <p className="text-sm text-muted-foreground">
+                    Three proposed tasks per priority (template suggestions —
+                    AI-ready).
+                  </p>
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      setDraft((d) => ({
+                        ...d,
+                        tasks: recommendTasks(state.priorities),
+                      }))
+                    }
+                  >
                     <RefreshCw className="h-3.5 w-3.5" />
                     Regenerate
                   </Button>
@@ -406,7 +703,8 @@ function PlanPage() {
                 {state.priorities.map((p) => (
                   <div key={p.id}>
                     <div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-                      <PriorityIcon id={p.id} className="h-7 w-7" />#{p.id} {p.name}
+                      <PriorityIcon id={p.id} className="h-7 w-7" />#{p.id}{" "}
+                      {p.name}
                     </div>
                     <div className="space-y-2">
                       {draft.tasks
@@ -425,25 +723,42 @@ function PlanPage() {
               <div className="space-y-6">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm text-muted-foreground">
-                    Select 1–3 tasks per priority, edit task titles & durations, and arrange execution order.
+                    Select 1–3 tasks per priority, edit task titles & durations,
+                    and arrange execution order.
                   </p>
-                  <Badge className={perPriorityOk ? "border-success/30 text-success" : "border-destructive/30 text-destructive"}>
-                    {perPriorityOk ? "Selection rules satisfied" : "Select 1–3 tasks per priority"}
+                  <Badge
+                    className={
+                      perPriorityOk
+                        ? "border-success/30 text-success"
+                        : "border-destructive/30 text-destructive"
+                    }
+                  >
+                    {perPriorityOk
+                      ? "Selection rules satisfied"
+                      : "Select 1–3 tasks per priority"}
                   </Badge>
                 </div>
 
                 <div className="space-y-6">
                   {state.priorities.map((p) => {
-                    const pTasks = draft.tasks.filter((t) => t.priorityId === p.id);
+                    const pTasks = draft.tasks.filter(
+                      (t) => t.priorityId === p.id,
+                    );
                     const pSelCount = pTasks.filter((t) => t.selected).length;
-                    const pSelMin = pTasks.filter((t) => t.selected).reduce((sum, t) => sum + t.duration, 0);
+                    const pSelMin = pTasks
+                      .filter((t) => t.selected)
+                      .reduce((sum, t) => sum + t.duration, 0);
 
                     return (
                       <div
                         key={p.id}
                         className={cn(
                           "rounded-2xl border border-glass-border bg-secondary/30 p-5 shadow-sm",
-                          p.id === 1 ? "border-t-2 border-t-p1" : p.id === 2 ? "border-t-2 border-t-p2" : "border-t-2 border-t-p3"
+                          p.id === 1
+                            ? "border-t-2 border-t-p1"
+                            : p.id === 2
+                              ? "border-t-2 border-t-p2"
+                              : "border-t-2 border-t-p3",
                         )}
                       >
                         {/* 1. Priority number and full priority name */}
@@ -455,18 +770,31 @@ function PlanPage() {
                                 <span className="font-display font-semibold">
                                   #{p.id} {p.name}
                                 </span>
-                                <Badge className={pSelCount >= 1 && pSelCount <= 3 ? "text-success" : "text-destructive"}>
-                                  {pSelCount} of {pTasks.length} selected ({fmtMin(pSelMin)})
+                                <Badge
+                                  className={
+                                    pSelCount >= 1 && pSelCount <= 3
+                                      ? "text-success"
+                                      : "text-destructive"
+                                  }
+                                >
+                                  {pSelCount} of {pTasks.length} selected (
+                                  {fmtMin(pSelMin)})
                                 </Badge>
                               </div>
                               {/* 2 & 3. Active project & milestone */}
                               <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                                 <span>
-                                  <span className="font-medium text-foreground/80">Project:</span> {p.project || "No active project"}
+                                  <span className="font-medium text-foreground/80">
+                                    Project:
+                                  </span>{" "}
+                                  {p.project || "No active project"}
                                 </span>
                                 <span>·</span>
                                 <span>
-                                  <span className="font-medium text-foreground/80">Milestone:</span> {p.milestone || "None set"}
+                                  <span className="font-medium text-foreground/80">
+                                    Milestone:
+                                  </span>{" "}
+                                  {p.milestone || "None set"}
                                 </span>
                               </div>
                             </div>
@@ -475,13 +803,18 @@ function PlanPage() {
 
                         {/* 4. Today's outcome in one clear, editable line */}
                         <div className="mt-3">
-                          <Label className="mb-1 text-[11px]">Today's Outcome</Label>
+                          <Label className="mb-1 text-[11px]">
+                            Today's Outcome
+                          </Label>
                           <Input
                             value={draft.outcomes[p.id] || ""}
                             onChange={(e) =>
                               setDraft((d) => ({
                                 ...d,
-                                outcomes: { ...d.outcomes, [p.id]: e.target.value },
+                                outcomes: {
+                                  ...d.outcomes,
+                                  [p.id]: e.target.value,
+                                },
                               }))
                             }
                             aria-label={`Today's outcome for ${p.name}`}
@@ -492,73 +825,150 @@ function PlanPage() {
 
                         {/* 5. Three numbered task recommendations */}
                         <div className="mt-4 space-y-2">
-                          {pTasks.map((t, idx) => (
-                            <div
-                              key={t.id}
-                              className={cn(
-                                "flex flex-col gap-2 rounded-xl border border-glass-border p-3 transition sm:flex-row sm:items-center",
-                                t.selected ? "bg-secondary/60 shadow-sm ring-1 ring-primary/20" : "bg-secondary/20 opacity-60"
-                              )}
-                            >
-                              <div className="flex items-center gap-3">
-                                {/* Selection checkbox */}
-                                <input
-                                  type="checkbox"
-                                  checked={t.selected}
-                                  aria-label={`Select task: ${t.title}`}
-                                  onChange={(e) => setTask(t.id, { selected: e.target.checked })}
-                                  className="h-4 w-4 rounded accent-primary"
-                                />
-                                {/* Task number (1, 2, 3) */}
-                                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-secondary/80 text-xs font-semibold text-muted-foreground">
-                                  {idx + 1}
-                                </span>
-                              </div>
+                          {pTasks.map((t, idx) => {
+                            const taskKIds = t.knowledgeIds || [];
+                            const taskKnowledge = state.knowledge.filter((k) =>
+                              taskKIds.includes(k.id),
+                            );
 
-                              {/* Editable task title */}
-                              <div className="flex-1 min-w-[200px]">
-                                <Input
-                                  value={t.title}
-                                  aria-label={`Task ${idx + 1} title`}
-                                  onChange={(e) => setTask(t.id, { title: e.target.value })}
-                                  className="h-9"
-                                />
-                              </div>
+                            return (
+                              <div
+                                key={t.id}
+                                className={cn(
+                                  "flex flex-col gap-2 rounded-xl border border-glass-border p-3 transition sm:flex-row sm:items-center",
+                                  t.selected
+                                    ? "bg-secondary/60 shadow-sm ring-1 ring-primary/20"
+                                    : "bg-secondary/20 opacity-60",
+                                )}
+                              >
+                                <div className="flex items-center gap-3">
+                                  {/* Selection checkbox */}
+                                  <input
+                                    type="checkbox"
+                                    checked={t.selected}
+                                    aria-label={`Select task: ${t.title}`}
+                                    onChange={(e) =>
+                                      setTask(t.id, {
+                                        selected: e.target.checked,
+                                      })
+                                    }
+                                    className="h-4 w-4 rounded accent-primary"
+                                  />
+                                  {/* Task number (1, 2, 3) */}
+                                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-secondary/80 text-xs font-semibold text-muted-foreground">
+                                    {idx + 1}
+                                  </span>
+                                </div>
 
-                              {/* One simple editable duration/timeline input with automatic unit detection */}
-                              <div className="w-full sm:w-48 shrink-0">
-                                <DurationInput
-                                  value={t.duration}
-                                  onChange={(min) => setTask(t.id, { duration: min })}
-                                  ariaLabel={`Duration for ${t.title}`}
-                                />
-                              </div>
+                                {/* Editable task title and attached knowledge pills */}
+                                <div className="flex-1 min-w-[200px]">
+                                  <Input
+                                    value={t.title}
+                                    aria-label={`Task ${idx + 1} title`}
+                                    onChange={(e) =>
+                                      setTask(t.id, { title: e.target.value })
+                                    }
+                                    className="h-9"
+                                  />
+                                  {taskKnowledge.length > 0 && (
+                                    <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                                      {taskKnowledge.map((k) => {
+                                        const fmt = getKnowledgeFormat(k);
+                                        return (
+                                          <span
+                                            key={k.id}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setViewingKnowledge([k]);
+                                            }}
+                                            className={cn(
+                                              "inline-flex items-center gap-1 rounded-full border px-2 py-0.2 text-[10px] font-medium transition cursor-pointer hover:brightness-110",
+                                              formatBadgeClass(fmt),
+                                            )}
+                                            title="Click to view full knowledge"
+                                          >
+                                            <BookOpen className="h-2.5 w-2.5" />
+                                            <span className="max-w-[140px] truncate">
+                                              {k.title}
+                                            </span>
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                setTask(t.id, {
+                                                  knowledgeIds: (
+                                                    t.knowledgeIds || []
+                                                  ).filter((id) => id !== k.id),
+                                                });
+                                              }}
+                                              className="ml-0.5 hover:text-destructive"
+                                              title="Unlink"
+                                            >
+                                              <X className="h-2 w-2" />
+                                            </button>
+                                          </span>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
 
-                              {/* Ascending / descending ordering controls */}
-                              <div className="flex items-center gap-1 self-end sm:self-center">
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  aria-label="Move task up"
-                                  disabled={idx === 0}
-                                  onClick={() => movePriorityTask(p.id, idx, idx - 1)}
-                                  className="h-8 w-8"
-                                >
-                                  <ArrowUp className="h-3.5 w-3.5" />
-                                </Button>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  aria-label="Move task down"
-                                  disabled={idx === pTasks.length - 1}
-                                  onClick={() => movePriorityTask(p.id, idx, idx + 1)}
-                                  className="h-8 w-8"
-                                >
-                                  <ArrowDown className="h-3.5 w-3.5" />
-                                </Button>
+                                {/* One simple editable duration/timeline input with automatic unit detection */}
+                                <div className="w-full sm:w-48 shrink-0">
+                                  <DurationInput
+                                    value={t.duration}
+                                    onChange={(min) =>
+                                      setTask(t.id, { duration: min })
+                                    }
+                                    ariaLabel={`Duration for ${t.title}`}
+                                  />
+                                </div>
+
+                                {/* Ascending / descending ordering controls & Link Knowledge */}
+                                <div className="flex items-center gap-1 self-end sm:self-center">
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    aria-label="Link knowledge"
+                                    onClick={() => setLinkingTaskId(t.id)}
+                                    title="Link principles, methods, or frameworks to this task"
+                                    className={cn(
+                                      "h-8 w-8",
+                                      taskKnowledge.length > 0
+                                        ? "text-cyan"
+                                        : "text-muted-foreground hover:text-foreground",
+                                    )}
+                                  >
+                                    <BookMarked className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    aria-label="Move task up"
+                                    disabled={idx === 0}
+                                    onClick={() =>
+                                      movePriorityTask(p.id, idx, idx - 1)
+                                    }
+                                    className="h-8 w-8"
+                                  >
+                                    <ArrowUp className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    aria-label="Move task down"
+                                    disabled={idx === pTasks.length - 1}
+                                    onClick={() =>
+                                      movePriorityTask(p.id, idx, idx + 1)
+                                    }
+                                    className="h-8 w-8"
+                                  >
+                                    <ArrowDown className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
                               </div>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       </div>
                     );
@@ -569,27 +979,43 @@ function PlanPage() {
                 <div className="flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-glass-border bg-secondary/40 p-4 text-sm">
                   <div className="flex flex-wrap items-center gap-6">
                     <div>
-                      <span className="text-muted-foreground">Total Selected: </span>
+                      <span className="text-muted-foreground">
+                        Total Selected:{" "}
+                      </span>
                       <span className="font-semibold">{sel.length} tasks</span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Planned Workload: </span>
-                      <span className="font-semibold text-primary">{fmtMin(selMin)}</span>
+                      <span className="text-muted-foreground">
+                        Planned Workload:{" "}
+                      </span>
+                      <span className="font-semibold text-primary">
+                        {fmtMin(selMin)}
+                      </span>
                     </div>
                     <div>
-                      <span className="text-muted-foreground">Available Time: </span>
+                      <span className="text-muted-foreground">
+                        Available Time:{" "}
+                      </span>
                       <span className="font-semibold">{ctx.hours}h</span>
                     </div>
                     <div>
                       <span className="text-muted-foreground">Remaining: </span>
-                      <span className={cn("font-semibold", selMin > ctx.hours * 60 ? "text-destructive" : "text-success")}>
+                      <span
+                        className={cn(
+                          "font-semibold",
+                          selMin > ctx.hours * 60
+                            ? "text-destructive"
+                            : "text-success",
+                        )}
+                      >
                         {fmtMin(Math.max(0, ctx.hours * 60 - selMin))}
                       </span>
                     </div>
                   </div>
                   {!perPriorityOk && (
                     <span className="text-xs font-semibold text-destructive">
-                      Rule: Each of the 3 priorities requires between 1 and 3 selected tasks.
+                      Rule: Each of the 3 priorities requires between 1 and 3
+                      selected tasks.
                     </span>
                   )}
                 </div>
@@ -605,11 +1031,21 @@ function PlanPage() {
                     ["Date", ctx.date],
                     ["Total Tasks", `${sel.length} selected`],
                     ["Planned Duration", fmtMin(selMin)],
-                    ["Remaining Time", fmtMin(Math.max(0, ctx.hours * 60 - selMin))],
+                    [
+                      "Remaining Time",
+                      fmtMin(Math.max(0, ctx.hours * 60 - selMin)),
+                    ],
                   ].map(([label, val]) => (
-                    <div key={label} className="rounded-2xl border border-glass-border bg-secondary/40 p-4">
-                      <div className="font-display text-xl font-semibold text-foreground">{val}</div>
-                      <div className="mt-0.5 text-xs text-muted-foreground">{label}</div>
+                    <div
+                      key={label}
+                      className="rounded-2xl border border-glass-border bg-secondary/40 p-4"
+                    >
+                      <div className="font-display text-xl font-semibold text-foreground">
+                        {val}
+                      </div>
+                      <div className="mt-0.5 text-xs text-muted-foreground">
+                        {label}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -622,7 +1058,10 @@ function PlanPage() {
                   {state.priorities.map((p) => {
                     const pTasks = sel.filter((t) => t.priorityId === p.id);
                     return (
-                      <div key={p.id} className="rounded-2xl border border-glass-border bg-secondary/40 p-5">
+                      <div
+                        key={p.id}
+                        className="rounded-2xl border border-glass-border bg-secondary/40 p-5"
+                      >
                         {/* Priority number, name & active project */}
                         <div className="flex flex-wrap items-center justify-between gap-3">
                           <div className="flex items-center gap-2.5">
@@ -632,7 +1071,10 @@ function PlanPage() {
                                 #{p.id} {p.name}
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                Active Project: <span className="font-medium text-foreground">{p.project || "None"}</span>
+                                Active Project:{" "}
+                                <span className="font-medium text-foreground">
+                                  {p.project || "None"}
+                                </span>
                               </div>
                             </div>
                           </div>
@@ -641,14 +1083,19 @@ function PlanPage() {
 
                         {/* Today's outcome, editable before approval */}
                         <div className="mt-3">
-                          <Label className="mb-1 text-[11px]">Today's Outcome (editable before approval)</Label>
+                          <Label className="mb-1 text-[11px]">
+                            Today's Outcome (editable before approval)
+                          </Label>
                           <Input
                             value={draft.outcomes[p.id]}
                             aria-label={`Outcome for ${p.name}`}
                             onChange={(e) =>
                               setDraft((d) => ({
                                 ...d,
-                                outcomes: { ...d.outcomes, [p.id]: e.target.value },
+                                outcomes: {
+                                  ...d.outcomes,
+                                  [p.id]: e.target.value,
+                                },
                               }))
                             }
                             className="h-9 bg-background/60"
@@ -658,7 +1105,9 @@ function PlanPage() {
                         {/* Selected tasks in execution order */}
                         <div className="mt-3 space-y-2">
                           {pTasks.map((t) => {
-                            const globalIndex = sel.findIndex((x) => x.id === t.id);
+                            const globalIndex = sel.findIndex(
+                              (x) => x.id === t.id,
+                            );
                             return (
                               <div
                                 key={t.id}
@@ -671,14 +1120,18 @@ function PlanPage() {
                                   <Input
                                     value={t.title}
                                     aria-label={`Task title`}
-                                    onChange={(e) => setTask(t.id, { title: e.target.value })}
+                                    onChange={(e) =>
+                                      setTask(t.id, { title: e.target.value })
+                                    }
                                     className="h-8 text-xs"
                                   />
                                 </div>
                                 <div className="w-full sm:w-44 shrink-0">
                                   <DurationInput
                                     value={t.duration}
-                                    onChange={(min) => setTask(t.id, { duration: min })}
+                                    onChange={(min) =>
+                                      setTask(t.id, { duration: min })
+                                    }
                                     ariaLabel={`Duration for ${t.title}`}
                                   />
                                 </div>
@@ -714,14 +1167,18 @@ function PlanPage() {
                 </div>
 
                 <p className="text-xs text-muted-foreground">
-                  Approving saves the plan. It will not start any task automatically.
+                  Approving saves the plan. It will not start any task
+                  automatically.
                 </p>
               </div>
             )}
 
             {/* Step Navigation Controls */}
             <div className="mt-8 flex justify-between gap-3">
-              <Button disabled={stage === 1} onClick={() => setStage(stage - 1)}>
+              <Button
+                disabled={stage === 1}
+                onClick={() => setStage(stage - 1)}
+              >
                 <ArrowLeft className="h-4 w-4" />
                 Back
               </Button>
@@ -739,6 +1196,51 @@ function PlanPage() {
           </div>
         </Glass>
       </div>
+
+      {/* Knowledge Modals for Contextual Reuse */}
+      {linkingOutcomePriorityId !== null && (
+        <KnowledgeSelectModal
+          open={linkingOutcomePriorityId !== null}
+          onClose={() => setLinkingOutcomePriorityId(null)}
+          selectedIds={
+            draft.outcomeKnowledgeIds?.[linkingOutcomePriorityId] || []
+          }
+          onSelect={(ids) => {
+            setDraft((d) => ({
+              ...d,
+              outcomeKnowledgeIds: {
+                ...(d.outcomeKnowledgeIds || {}),
+                [linkingOutcomePriorityId]: ids,
+              },
+            }));
+          }}
+          title={`Link Knowledge — Priority ${linkingOutcomePriorityId}`}
+          subtitle="Associate relevant principles, methods, or frameworks to guide this daily outcome."
+        />
+      )}
+
+      {linkingTaskId !== null && (
+        <KnowledgeSelectModal
+          open={linkingTaskId !== null}
+          onClose={() => setLinkingTaskId(null)}
+          selectedIds={
+            draft.tasks.find((t) => t.id === linkingTaskId)?.knowledgeIds || []
+          }
+          onSelect={(ids) => {
+            setTask(linkingTaskId, { knowledgeIds: ids });
+          }}
+          title="Link Knowledge to Task"
+          subtitle="Associate a method (steps), principle (rule), or framework to execute this task."
+        />
+      )}
+
+      {viewingKnowledge && (
+        <KnowledgeViewerModal
+          open={!!viewingKnowledge}
+          onClose={() => setViewingKnowledge(null)}
+          items={viewingKnowledge}
+        />
+      )}
     </div>
   );
 }
@@ -747,14 +1249,22 @@ function TaskCard({ t }: { t: Task }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="rounded-2xl border border-glass-border bg-secondary/40 p-3">
-      <button className="flex w-full items-center justify-between gap-3 text-left" onClick={() => setOpen(!open)}>
+      <button
+        className="flex w-full items-center justify-between gap-3 text-left"
+        onClick={() => setOpen(!open)}
+      >
         <div>
           <div className="text-sm font-medium">{t.title}</div>
           <div className="text-xs text-muted-foreground">
             {fmtMin(t.duration)} · Output: {t.expectedOutput}
           </div>
         </div>
-        <ChevronDown className={cn("h-4 w-4 shrink-0 transition-transform", open && "rotate-180")} />
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 transition-transform",
+            open && "rotate-180",
+          )}
+        />
       </button>
       {open && (
         <div className="mt-3 grid gap-2 text-xs animate-in fade-in slide-in-from-top-1 sm:grid-cols-2">

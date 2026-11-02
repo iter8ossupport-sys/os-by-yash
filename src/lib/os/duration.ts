@@ -15,7 +15,12 @@ export interface DurationParseResult {
 export function parseDurationInput(raw: string): DurationParseResult {
   const trimmed = raw.trim();
   if (!trimmed) {
-    return { valid: false, minutes: 0, interpretedText: "", error: "Duration is required" };
+    return {
+      valid: false,
+      minutes: 0,
+      interpretedText: "",
+      error: "Duration is required",
+    };
   }
 
   // Regex pattern: numeric value (integer or decimal) followed by optional whitespace and optional m/M

@@ -14,7 +14,12 @@ import { toast } from "sonner";
 import { useOS } from "@/lib/os/store";
 import { uid, today } from "@/lib/os/seed";
 import { saveProject, deleteProject, setActiveProject } from "@/lib/os/logic";
-import type { PriorityId, Project, ProjectDoc, ProjectStatus } from "@/lib/os/types";
+import type {
+  PriorityId,
+  Project,
+  ProjectDoc,
+  ProjectStatus,
+} from "@/lib/os/types";
 import {
   Badge,
   Button,
@@ -33,9 +38,15 @@ export const Route = createFileRoute("/projects")({
   head: () => ({
     meta: [
       { title: "Projects — Yash OS" },
-      { name: "description", content: "Manage projects under your three permanent priorities." },
+      {
+        name: "description",
+        content: "Manage projects under your three permanent priorities.",
+      },
       { property: "og:title", content: "Projects — Yash OS" },
-      { property: "og:description", content: "Projects, milestones, evidence and decisions." },
+      {
+        property: "og:description",
+        content: "Projects, milestones, evidence and decisions.",
+      },
     ],
   }),
   component: ProjectsPage,
@@ -103,11 +114,15 @@ const SUGGESTED_LEARNING_CATEGORIES = [
 
 function ProjectsPage() {
   const { state, update } = useOS();
-  const [creatingPriority, setCreatingPriority] = useState<PriorityId | null>(null);
+  const [creatingPriority, setCreatingPriority] = useState<PriorityId | null>(
+    null,
+  );
   const [isCreating, setIsCreating] = useState(false);
 
   // Exactly one project's details open at a time in the wide centered layout
-  const [activeDetailsProjectId, setActiveDetailsProjectId] = useState<string | null>(null);
+  const [activeDetailsProjectId, setActiveDetailsProjectId] = useState<
+    string | null
+  >(null);
 
   // Active document editor modal state
   const [docModal, setDocModal] = useState<{
@@ -116,7 +131,7 @@ function ProjectsPage() {
   } | null>(null);
 
   const activeProject = activeDetailsProjectId
-    ? state.projects.find((p) => p.id === activeDetailsProjectId) ?? null
+    ? (state.projects.find((p) => p.id === activeDetailsProjectId) ?? null)
     : null;
 
   const handleSaveProject = (p: Project) => {
@@ -132,12 +147,15 @@ function ProjectsPage() {
     toast.success("Project deleted");
   };
 
-  const handleSetActive = (priorityId: PriorityId, projectId: string | null) => {
+  const handleSetActive = (
+    priorityId: PriorityId,
+    projectId: string | null,
+  ) => {
     update((s) => setActiveProject(s, priorityId, projectId));
     toast.success(
       projectId
         ? `Set as active for Priority #${priorityId}`
-        : `Unset active for Priority #${priorityId}`
+        : `Unset active for Priority #${priorityId}`,
     );
   };
 
@@ -163,7 +181,9 @@ function ProjectsPage() {
       {/* 1. MAIN LAYOUT — THREE HORIZONTAL PRIORITIES */}
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-3">
         {PRIORITIES_META.map((meta) => {
-          const priorityProjects = state.projects.filter((p) => p.priorityId === meta.id);
+          const priorityProjects = state.projects.filter(
+            (p) => p.priorityId === meta.id,
+          );
 
           return (
             <div key={meta.id} className="flex min-w-0 flex-col gap-3">
@@ -171,7 +191,7 @@ function ProjectsPage() {
               <Glass
                 className={cn(
                   "relative border-t-2 p-5 transition-colors",
-                  meta.borderClass
+                  meta.borderClass,
                 )}
               >
                 <div className="flex items-start justify-between gap-3">
@@ -211,7 +231,7 @@ function ProjectsPage() {
                 <div
                   className={cn(
                     "flex h-7 w-7 items-center justify-center rounded-full border shadow-sm backdrop-blur-md transition-all hover:scale-105",
-                    meta.arrowClass
+                    meta.arrowClass,
                   )}
                   title={`Projects belonging to Priority #${meta.id}`}
                   aria-hidden="true"
@@ -241,7 +261,9 @@ function ProjectsPage() {
                     <CollapsedProjectCard
                       key={project.id}
                       project={project}
-                      onOpenDetails={() => setActiveDetailsProjectId(project.id)}
+                      onOpenDetails={() =>
+                        setActiveDetailsProjectId(project.id)
+                      }
                     />
                   ))
                 )}
@@ -256,7 +278,9 @@ function ProjectsPage() {
         <ProjectDetailsModal
           project={activeProject}
           isActive={state.priorities.some(
-            (pr) => pr.id === activeProject.priorityId && pr.activeProjectId === activeProject.id
+            (pr) =>
+              pr.id === activeProject.priorityId &&
+              pr.activeProjectId === activeProject.id,
           )}
           onClose={() => setActiveDetailsProjectId(null)}
           onSave={(updated) => {
@@ -265,9 +289,14 @@ function ProjectsPage() {
           }}
           onDelete={() => handleDeleteProject(activeProject.id)}
           onSetActive={(active) =>
-            handleSetActive(activeProject.priorityId, active ? activeProject.id : null)
+            handleSetActive(
+              activeProject.priorityId,
+              active ? activeProject.id : null,
+            )
           }
-          onOpenDocEditor={(doc) => setDocModal({ project: activeProject, doc })}
+          onOpenDocEditor={(doc) =>
+            setDocModal({ project: activeProject, doc })
+          }
         />
       )}
 
@@ -326,7 +355,10 @@ interface CollapsedProjectCardProps {
   onOpenDetails: () => void;
 }
 
-function CollapsedProjectCard({ project, onOpenDetails }: CollapsedProjectCardProps) {
+function CollapsedProjectCard({
+  project,
+  onOpenDetails,
+}: CollapsedProjectCardProps) {
   const docCount = project.docs?.length ?? 0;
 
   return (
@@ -360,7 +392,9 @@ function CollapsedProjectCard({ project, onOpenDetails }: CollapsedProjectCardPr
             {project.milestone ? (
               <span>
                 <span className="text-muted-foreground/70">Milestone: </span>
-                <span className="font-medium text-foreground/90">{project.milestone}</span>
+                <span className="font-medium text-foreground/90">
+                  {project.milestone}
+                </span>
               </span>
             ) : (
               <span className="text-muted-foreground/50">No milestone set</span>
@@ -373,10 +407,14 @@ function CollapsedProjectCard({ project, onOpenDetails }: CollapsedProjectCardPr
               {project.deadline ? (
                 <span>
                   <span className="text-muted-foreground/70">Deadline: </span>
-                  <span className="font-medium text-foreground/90">{project.deadline}</span>
+                  <span className="font-medium text-foreground/90">
+                    {project.deadline}
+                  </span>
                 </span>
               ) : (
-                <span className="text-muted-foreground/50">No deadline set</span>
+                <span className="text-muted-foreground/50">
+                  No deadline set
+                </span>
               )}
             </div>
             <span className="shrink-0 font-medium text-muted-foreground/80">
@@ -437,13 +475,15 @@ function ProjectDetailsModal({
   const taskHistory = state.history.flatMap((h) =>
     h.outputs
       .filter((o) => o.priorityId === draft.priorityId)
-      .map((o) => ({ ...o, date: h.date }))
+      .map((o) => ({ ...o, date: h.date })),
   );
 
   const handleSaveDraft = () => {
     // Validate Priority 2 required workstream
     if (draft.priorityId === 2 && !draft.workstream) {
-      toast.error("Please select a required workstream (A or B) for Priority 2");
+      toast.error(
+        "Please select a required workstream (A or B) for Priority 2",
+      );
       return;
     }
     onSave(draft);
@@ -469,7 +509,9 @@ function ProjectDetailsModal({
     setCustomCatInput("");
   };
 
-  const priorityMeta = PRIORITIES_META.find((m) => m.id === draft.priorityId) ?? PRIORITIES_META[0]!;
+  const priorityMeta =
+    PRIORITIES_META.find((m) => m.id === draft.priorityId) ??
+    PRIORITIES_META[0]!;
 
   return (
     <Modal open onClose={onClose} title={draft.name || "Project Details"} wide>
@@ -477,7 +519,12 @@ function ProjectDetailsModal({
         {/* Active Project Status Banner & Header Controls */}
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-secondary/30 p-3">
           <div className="flex flex-wrap items-center gap-2 text-xs">
-            <span className={cn("rounded-md border px-2 py-0.5 font-semibold text-[11px]", priorityMeta.badgeClass)}>
+            <span
+              className={cn(
+                "rounded-md border px-2 py-0.5 font-semibold text-[11px]",
+                priorityMeta.badgeClass,
+              )}
+            >
               #{draft.priorityId} {priorityMeta.name}
             </span>
 
@@ -544,7 +591,9 @@ function ProjectDetailsModal({
             <Label>Status</Label>
             <Select
               value={draft.status}
-              onChange={(v) => setDraft({ ...draft, status: v as ProjectStatus })}
+              onChange={(v) =>
+                setDraft({ ...draft, status: v as ProjectStatus })
+              }
               options={STATUSES.map((s) => ({ value: s, label: s }))}
             />
           </div>
@@ -567,7 +616,9 @@ function ProjectDetailsModal({
                 Required Workstream Classification
               </Label>
               {!draft.workstream && (
-                <span className="text-xs text-destructive font-medium">Selection required</span>
+                <span className="text-xs text-destructive font-medium">
+                  Selection required
+                </span>
               )}
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
@@ -577,16 +628,19 @@ function ProjectDetailsModal({
                   "flex flex-col text-left p-3 rounded-xl border text-xs transition-all",
                   draft.workstream === "A"
                     ? "border-cyan bg-cyan/15 text-foreground ring-1 ring-cyan"
-                    : "border-glass-border bg-secondary/40 text-muted-foreground hover:bg-secondary/60"
+                    : "border-glass-border bg-secondary/40 text-muted-foreground hover:bg-secondary/60",
                 )}
                 onClick={() => setDraft({ ...draft, workstream: "A" })}
               >
                 <div className="flex items-center gap-1.5 font-semibold text-foreground text-sm">
-                  <span className="rounded bg-cyan/20 px-1.5 py-0.2 text-[10px] text-cyan">A</span>
+                  <span className="rounded bg-cyan/20 px-1.5 py-0.2 text-[10px] text-cyan">
+                    A
+                  </span>
                   Cashflow Generation
                 </div>
                 <span className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                  Generate short-term cash through trading systems (LBES) or service work.
+                  Generate short-term cash through trading systems (LBES) or
+                  service work.
                 </span>
               </button>
 
@@ -596,16 +650,19 @@ function ProjectDetailsModal({
                   "flex flex-col text-left p-3 rounded-xl border text-xs transition-all",
                   draft.workstream === "B"
                     ? "border-cyan bg-cyan/15 text-foreground ring-1 ring-cyan"
-                    : "border-glass-border bg-secondary/40 text-muted-foreground hover:bg-secondary/60"
+                    : "border-glass-border bg-secondary/40 text-muted-foreground hover:bg-secondary/60",
                 )}
                 onClick={() => setDraft({ ...draft, workstream: "B" })}
               >
                 <div className="flex items-center gap-1.5 font-semibold text-foreground text-sm">
-                  <span className="rounded bg-cyan/20 px-1.5 py-0.2 text-[10px] text-cyan">B</span>
+                  <span className="rounded bg-cyan/20 px-1.5 py-0.2 text-[10px] text-cyan">
+                    B
+                  </span>
                   Fintech Product Capability
                 </div>
                 <span className="mt-1 text-xs text-muted-foreground leading-relaxed">
-                  Build LBES into a useful fintech product solving real user problems.
+                  Build LBES into a useful fintech product solving real user
+                  problems.
                 </span>
               </button>
             </div>
@@ -630,10 +687,12 @@ function ProjectDetailsModal({
                       "rounded-lg border px-2.5 py-1 text-xs font-medium transition-all",
                       selected
                         ? "border-violet bg-violet/20 text-foreground ring-1 ring-violet/50"
-                        : "border-glass-border bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/70"
+                        : "border-glass-border bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary/70",
                     )}
                   >
-                    {selected && <Check className="mr-1.5 inline h-3.5 w-3.5 text-violet" />}
+                    {selected && (
+                      <Check className="mr-1.5 inline h-3.5 w-3.5 text-violet" />
+                    )}
                     {cat}
                   </button>
                 );
@@ -690,7 +749,9 @@ function ProjectDetailsModal({
             <Textarea
               rows={3}
               value={draft.objective}
-              onChange={(e) => setDraft({ ...draft, objective: e.target.value })}
+              onChange={(e) =>
+                setDraft({ ...draft, objective: e.target.value })
+              }
               placeholder="What is this project aiming to achieve?"
             />
           </div>
@@ -699,7 +760,9 @@ function ProjectDetailsModal({
             <Textarea
               rows={3}
               value={draft.milestone}
-              onChange={(e) => setDraft({ ...draft, milestone: e.target.value })}
+              onChange={(e) =>
+                setDraft({ ...draft, milestone: e.target.value })
+              }
               placeholder="Next immediate milestone to achieve..."
             />
           </div>
@@ -712,7 +775,9 @@ function ProjectDetailsModal({
             <Textarea
               rows={3}
               value={draft.hypothesis}
-              onChange={(e) => setDraft({ ...draft, hypothesis: e.target.value })}
+              onChange={(e) =>
+                setDraft({ ...draft, hypothesis: e.target.value })
+              }
               placeholder="Core assumption being validated through execution..."
             />
           </div>
@@ -734,7 +799,9 @@ function ProjectDetailsModal({
             <Textarea
               rows={3}
               value={draft.bottlenecks}
-              onChange={(e) => setDraft({ ...draft, bottlenecks: e.target.value })}
+              onChange={(e) =>
+                setDraft({ ...draft, bottlenecks: e.target.value })
+              }
               placeholder="Current blockers, friction, or constraints..."
             />
           </div>
@@ -756,7 +823,9 @@ function ProjectDetailsModal({
             <Textarea
               rows={3}
               value={draft.decisions}
-              onChange={(e) => setDraft({ ...draft, decisions: e.target.value })}
+              onChange={(e) =>
+                setDraft({ ...draft, decisions: e.target.value })
+              }
               placeholder="Key architectural, business, and strategic decisions made..."
             />
           </div>
@@ -778,7 +847,9 @@ function ProjectDetailsModal({
             <Textarea
               rows={3}
               value={draft.documents}
-              onChange={(e) => setDraft({ ...draft, documents: e.target.value })}
+              onChange={(e) =>
+                setDraft({ ...draft, documents: e.target.value })
+              }
               placeholder="Reference URLs, specs, design assets, and external files..."
             />
           </div>
@@ -789,9 +860,14 @@ function ProjectDetailsModal({
               <div className="h-[76px] overflow-y-auto space-y-1 rounded-xl border border-glass-border/60 bg-secondary/30 p-2.5 text-xs">
                 {taskHistory.map((item, idx) => (
                   <div key={idx} className="leading-snug">
-                    <span className="font-mono text-[10px] text-muted-foreground">{item.date}</span> —{" "}
-                    <span className="font-medium text-foreground">{item.title}</span>:{" "}
-                    <span className="text-muted-foreground">{item.text}</span>
+                    <span className="font-mono text-[10px] text-muted-foreground">
+                      {item.date}
+                    </span>{" "}
+                    —{" "}
+                    <span className="font-medium text-foreground">
+                      {item.title}
+                    </span>
+                    : <span className="text-muted-foreground">{item.text}</span>
                   </div>
                 ))}
               </div>
@@ -812,9 +888,7 @@ function ProjectDetailsModal({
                 <span className="font-semibold text-sm text-foreground">
                   Project Documents
                 </span>
-                <Badge className="text-xs px-2 py-0.5">
-                  Docs {docCount}/5
-                </Badge>
+                <Badge className="text-xs px-2 py-0.5">Docs {docCount}/5</Badge>
               </div>
               <p className="mt-0.5 text-xs text-muted-foreground">
                 Up to 5 editable documents associated with this project.
@@ -858,7 +932,8 @@ function ProjectDetailsModal({
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-glass-border/50 p-4 text-center text-xs text-muted-foreground">
-              No documents created yet. Click "+ Add document" to attach up to 5 documents.
+              No documents created yet. Click "+ Add document" to attach up to 5
+              documents.
             </div>
           )}
         </div>
@@ -871,7 +946,7 @@ function ProjectDetailsModal({
             onClick={() => {
               if (
                 confirm(
-                  `Delete project "${draft.name}"? This will remove its active assignment if active.`
+                  `Delete project "${draft.name}"? This will remove its active assignment if active.`,
                 )
               ) {
                 onDelete();
@@ -911,7 +986,9 @@ function CreateProjectModal({
 }: CreateProjectModalProps) {
   const [name, setName] = useState("");
   const [objective, setObjective] = useState("");
-  const [priorityId, setPriorityId] = useState<PriorityId>(defaultPriority ?? 1);
+  const [priorityId, setPriorityId] = useState<PriorityId>(
+    defaultPriority ?? 1,
+  );
 
   // Priority 2 required workstream
   const [workstream, setWorkstream] = useState<"A" | "B" | null>(null);
@@ -1014,11 +1091,21 @@ function CreateProjectModal({
                   className={cn(
                     "flex flex-col items-center justify-center rounded-xl border p-2.5 text-center transition-all",
                     selected
-                      ? cn("bg-secondary/70 ring-1", meta.borderClass.replace("border-t-", "border-").replace("border-", "ring-"))
-                      : "border-glass-border bg-secondary/30 text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                      ? cn(
+                          "bg-secondary/70 ring-1",
+                          meta.borderClass
+                            .replace("border-t-", "border-")
+                            .replace("border-", "ring-"),
+                        )
+                      : "border-glass-border bg-secondary/30 text-muted-foreground hover:bg-secondary/50 hover:text-foreground",
                   )}
                 >
-                  <span className={cn("text-xs font-semibold", selected ? meta.accentClass : "")}>
+                  <span
+                    className={cn(
+                      "text-xs font-semibold",
+                      selected ? meta.accentClass : "",
+                    )}
+                  >
                     #{meta.id}
                   </span>
                   <span className="text-[11px] font-medium leading-tight mt-0.5">
@@ -1038,7 +1125,9 @@ function CreateProjectModal({
                 Required Workstream Classification *
               </Label>
               {!workstream && (
-                <span className="text-[11px] text-destructive font-medium">Required</span>
+                <span className="text-[11px] text-destructive font-medium">
+                  Required
+                </span>
               )}
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
@@ -1048,16 +1137,19 @@ function CreateProjectModal({
                   "flex flex-col text-left p-2.5 rounded-lg border text-xs transition-all",
                   workstream === "A"
                     ? "border-cyan bg-cyan/15 text-foreground ring-1 ring-cyan"
-                    : "border-glass-border bg-secondary/40 text-muted-foreground hover:bg-secondary/60"
+                    : "border-glass-border bg-secondary/40 text-muted-foreground hover:bg-secondary/60",
                 )}
                 onClick={() => setWorkstream("A")}
               >
                 <div className="flex items-center gap-1.5 font-semibold text-foreground">
-                  <span className="rounded bg-cyan/20 px-1 py-0.2 text-[10px] text-cyan">A</span>
+                  <span className="rounded bg-cyan/20 px-1 py-0.2 text-[10px] text-cyan">
+                    A
+                  </span>
                   Cashflow Generation
                 </div>
                 <span className="mt-1 text-[11px] text-muted-foreground leading-snug">
-                  Generate short-term cash through trading systems (LBES) or service work.
+                  Generate short-term cash through trading systems (LBES) or
+                  service work.
                 </span>
               </button>
 
@@ -1067,16 +1159,19 @@ function CreateProjectModal({
                   "flex flex-col text-left p-2.5 rounded-lg border text-xs transition-all",
                   workstream === "B"
                     ? "border-cyan bg-cyan/15 text-foreground ring-1 ring-cyan"
-                    : "border-glass-border bg-secondary/40 text-muted-foreground hover:bg-secondary/60"
+                    : "border-glass-border bg-secondary/40 text-muted-foreground hover:bg-secondary/60",
                 )}
                 onClick={() => setWorkstream("B")}
               >
                 <div className="flex items-center gap-1.5 font-semibold text-foreground">
-                  <span className="rounded bg-cyan/20 px-1 py-0.2 text-[10px] text-cyan">B</span>
+                  <span className="rounded bg-cyan/20 px-1 py-0.2 text-[10px] text-cyan">
+                    B
+                  </span>
                   Fintech Product Capability
                 </div>
                 <span className="mt-1 text-[11px] text-muted-foreground leading-snug">
-                  Build LBES into a useful fintech product solving real user problems.
+                  Build LBES into a useful fintech product solving real user
+                  problems.
                 </span>
               </button>
             </div>
@@ -1101,10 +1196,12 @@ function CreateProjectModal({
                       "rounded-lg border px-2 py-1 text-[11px] font-medium transition-all",
                       selected
                         ? "border-violet bg-violet/20 text-foreground ring-1 ring-violet/50"
-                        : "border-glass-border bg-secondary/40 text-muted-foreground hover:text-foreground"
+                        : "border-glass-border bg-secondary/40 text-muted-foreground hover:text-foreground",
                     )}
                   >
-                    {selected && <Check className="mr-1 inline h-3 w-3 text-violet" />}
+                    {selected && (
+                      <Check className="mr-1 inline h-3 w-3 text-violet" />
+                    )}
                     {cat}
                   </button>
                 );
@@ -1156,11 +1253,7 @@ function CreateProjectModal({
 
       <div className="mt-6 flex justify-end gap-2 border-t border-glass-border/60 pt-4">
         <Button onClick={onClose}>Cancel</Button>
-        <Button
-          variant="primary"
-          disabled={!canSubmit}
-          onClick={handleSubmit}
-        >
+        <Button variant="primary" disabled={!canSubmit} onClick={handleSubmit}>
           Create Project
         </Button>
       </div>
@@ -1208,12 +1301,17 @@ function DocumentEditorModal({
     <Modal
       open
       onClose={onClose}
-      title={doc ? `Edit Document: ${doc.title || "Untitled"}` : "New Project Document"}
+      title={
+        doc
+          ? `Edit Document: ${doc.title || "Untitled"}`
+          : "New Project Document"
+      }
       wide
     >
       <div className="space-y-4">
         <div className="text-xs text-muted-foreground">
-          Project: <span className="font-semibold text-foreground">{project.name}</span>{" "}
+          Project:{" "}
+          <span className="font-semibold text-foreground">{project.name}</span>{" "}
           (Priority #{project.priorityId})
         </div>
 

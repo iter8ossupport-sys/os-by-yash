@@ -84,48 +84,64 @@ export const FUTURE_DATABASE_MAPPING: DatabaseTableDefinition[] = [
     primaryKey: "date",
     foreignKeys: { workspace_id: "workspaces.id" },
     indexes: ["workspace_id", "date", "reviewed_at"],
-    description: "Daily review closeout records with qualitative reflections and audit deltas.",
+    description:
+      "Daily review closeout records with qualitative reflections and audit deltas.",
   },
   {
     tableName: "period_reviews",
     primaryKey: "id",
     foreignKeys: { workspace_id: "workspaces.id" },
     indexes: ["workspace_id", "type", "start_date", "end_date"],
-    description: "Immutable finalized snapshots of weekly, monthly, and quarterly performance reviews.",
+    description:
+      "Immutable finalized snapshots of weekly, monthly, and quarterly performance reviews.",
   },
   {
     tableName: "review_bottlenecks",
     primaryKey: "id",
-    foreignKeys: { workspace_id: "workspaces.id", priority_id: "priorities.id", project_id: "projects.id" },
+    foreignKeys: {
+      workspace_id: "workspaces.id",
+      priority_id: "priorities.id",
+      project_id: "projects.id",
+    },
     indexes: ["workspace_id", "status", "category", "severity"],
-    description: "System friction log with recurrence count, impact rating, and resolution status.",
+    description:
+      "System friction log with recurrence count, impact rating, and resolution status.",
   },
   {
     tableName: "review_improvements",
     primaryKey: "id",
-    foreignKeys: { workspace_id: "workspaces.id", bottleneck_id: "review_bottlenecks.id" },
+    foreignKeys: {
+      workspace_id: "workspaces.id",
+      bottleneck_id: "review_bottlenecks.id",
+    },
     indexes: ["workspace_id", "status", "action_cadence"],
     description: "Continuous improvement loop actions with validation results.",
   },
   {
     tableName: "forecast_snapshots",
     primaryKey: "id",
-    foreignKeys: { workspace_id: "workspaces.id", priority_id: "priorities.id" },
+    foreignKeys: {
+      workspace_id: "workspaces.id",
+      priority_id: "priorities.id",
+    },
     indexes: ["workspace_id", "status", "predicted_date"],
-    description: "Milestone velocity projections and historical accuracy calibration ledger.",
+    description:
+      "Milestone velocity projections and historical accuracy calibration ledger.",
   },
   {
     tableName: "report_shares",
     primaryKey: "id",
     foreignKeys: { workspace_id: "workspaces.id" },
     indexes: ["share_token", "workspace_id", "expires_at"],
-    description: "Permission-scoped report access grants and redaction configurations.",
+    description:
+      "Permission-scoped report access grants and redaction configurations.",
   },
   {
     tableName: "review_settings",
     primaryKey: "workspace_id",
     foreignKeys: { workspace_id: "workspaces.id" },
     indexes: ["workspace_id"],
-    description: "User dashboard configurations, custom metric formulas, and alert controls.",
+    description:
+      "User dashboard configurations, custom metric formulas, and alert controls.",
   },
 ];
